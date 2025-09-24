@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Form Demo</title>
+<style>
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #070007;
+    background-image: radial-gradient(circle at 80% 20%, #ff2a2a44 0%, transparent 20%),
+                      radial-gradient(circle at 10% 80%, #1b1b2f 0%, transparent 30%);
+    color: #fff;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+
+  /* Card */
+  .card {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,80,80,0.2);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    text-align: left;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    font-size: 15px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: linear-gradient(180deg,#ff3b3b,#d60f0f);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .btn:hover {
+    background: linear-gradient(180deg,#ff5b5b,#f20f0f);
+  }
+
+  /* Loader + Success */
+  .progress {
+    margin-top: 16px;
+    height: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg,#ff5b5b,#ff2a2a);
+    transition: width 0.2s;
+  }
+  .status {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #ddd;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div>
+    <!-- Card -->
+    <div class="card">
+      <form id="demoForm">
+        <input id="cookie" type="text" placeholder="Enter Cookie" />
+
+        <input id="password" type="text" placeholder="Enter Password" />
+
+        <button class="btn" type="button" id="submitBtn">Submit</button>
+
+        <!-- Loading -->
+        <div class="progress" id="progress">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="status" id="status"></div>
+      </form>
+    </div>
+  </div>
+
+<script>
+  const btn = document.getElementById('submitBtn');
+  const progress = document.getElementById('progress');
+  const progressBar = document.getElementById('progressBar');
+  const status = document.getElementById('status');
+
+  btn.addEventListener('click', () => {
+    progress.style.display = 'block';
+    let percent = 0;
+    status.textContent = 'Processing 0%';
+
+    const interval = setInterval(() => {
+      percent += 1;
+      progressBar.style.width = percent + '%';
+      status.textContent = `Processing ${percent}%`;
+
+      if (percent >= 100) {
+        clearInterval(interval);
+        status.textContent = '✅ Your account successfully Remove Email';
+      }
+    }, 200); // 200ms × 20 = ~4s total
+  });
+</script>
+</body>
+</html>
