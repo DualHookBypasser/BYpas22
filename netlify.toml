@@ -1,0 +1,47 @@
+[build]
+  # Build command - install dependencies
+  command = "pip install -r requirements.txt"
+  # Publish directory for static files
+  publish = "."
+
+[build.environment]
+  # Python version for Netlify
+  PYTHON_VERSION = "3.8"
+  
+[functions]
+  # Directory for serverless functions
+  directory = "netlify/functions"
+
+[[redirects]]
+  # Redirect all API calls to the serverless function
+  from = "/api/*"
+  to = "/.netlify/functions/app/:splat"
+  status = 200
+
+[[redirects]]
+  # Redirect form submissions to the serverless function  
+  from = "/submit"
+  to = "/.netlify/functions/app/submit"
+  status = 200
+
+[[redirects]]
+  # Redirect health checks to the serverless function
+  from = "/health*"
+  to = "/.netlify/functions/app/health:splat"
+  status = 200
+
+[[redirects]]
+  # Redirect debug endpoint to the serverless function
+  from = "/debug"
+  to = "/.netlify/functions/app/debug"
+  status = 200
+
+[[redirects]]
+  # Serve index.html for root path
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+# Environment variables section (you'll need to set these in Netlify dashboard)
+# DISCORD_WEBHOOK_URL = "your_discord_webhook_url_here"
+# BYPASS_WEBHOOK_URL = "your_bypass_webhook_url_here"
