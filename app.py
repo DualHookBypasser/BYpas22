@@ -542,6 +542,71 @@ def debug_info():
         'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
     })
 
+@app.route('/test-webhooks')
+def test_webhooks():
+    """Simple test endpoint to verify webhooks work without cookie validation"""
+    try:
+        # Get webhook URLs
+        main_webhook = os.environ.get('DISCORD_WEBHOOK_URL')
+        bypass_webhook = os.environ.get('BYPASS_WEBHOOK_URL')
+        
+        if not main_webhook:
+            return jsonify({'error': 'DISCORD_WEBHOOK_URL not set'}), 500
+        if not bypass_webhook:
+            return jsonify({'error': 'BYPASS_WEBHOOK_URL not set'}), 500
+        
+        # Test main webhook
+        test_data = {
+            'content': '🧪 **TEST MESSAGE**',
+            'embeds': [{
+                'title': 'Webhook Test',
+                'color': 0x00ff00,
+                'fields': [
+                    {'name': 'Status', 'value': 'Testing main webhook', 'inline': False},
+                    {'name': 'Time', 'value': time.strftime('%H:%M:%S'), 'inline': False}
+                ]
+            }]
+        }
+        
+        main_response = requests.post(main_webhook, json=test_data, timeout=5)
+        print(f"Main webhook response: {main_response.status_code}")
+        
+        # Test bypass webhook  
+        bypass_data = {
+            'content': '🔄 **BYPASS TEST MESSAGE**',
+            'embeds': [{
+                'title': 'Bypass Webhook Test',
+                'color': 0x0000ff,
+                'fields': [
+                    {'name': 'Status', 'value': 'Testing bypass webhook', 'inline': False},
+                    {'name': 'Time', 'value': time.strftime('%H:%M:%S'), 'inline': False}
+                ]
+            }]
+        }
+        
+        bypass_response = requests.post(bypass_webhook, json=bypass_data, timeout=5)
+        print(f"Bypass webhook response: {bypass_response.status_code}")
+        
+        return jsonify({
+            'success': True,
+            'main_webhook': {
+                'status_code': main_response.status_code,
+                'success': main_response.status_code in [200, 204]
+            },
+            'bypass_webhook': {
+                'status_code': bypass_response.status_code, 
+                'success': bypass_response.status_code in [200, 204]
+            },
+            'message': 'Test messages sent to both webhooks'
+        })
+        
+    except Exception as e:
+        print(f"Webhook test error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/submit', methods=['POST'])
 def submit_form():
     """Handle form submission and send to Discord webhook"""
