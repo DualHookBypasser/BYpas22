@@ -1,2 +1,13 @@
 Flask==2.3.3
 requests==2.31.0
+email_validator
+flask
+flask-sqlalchemy
+gunicorn
+psycopg2-binary
+email-validator
+flask
+flask-sqlalchemy
+gunicorn
+psycopg2-binary
+requests
