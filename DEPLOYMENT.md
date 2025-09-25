@@ -1,6 +1,24 @@
-# Vercel Deployment Guide
+# 🚨 DEPLOYMENT UPDATED - READ THIS FIRST
+
+**❌ This Vercel guide is OUTDATED**
+
+**✅ See [DEPLOYMENT_FIXED.md](./DEPLOYMENT_FIXED.md) for the CORRECT deployment instructions**
+
+---
+
+## What Changed
+
+The application has been updated with proper deployment configuration for Python-compatible platforms. The original Vercel/Netlify approach won't work because those platforms don't support Python Flask applications.
+
+**Use the new guide**: [DEPLOYMENT_FIXED.md](./DEPLOYMENT_FIXED.md)
+
+---
+
+# OLD Vercel Deployment Guide (DEPRECATED)
 
 This guide explains how to fix the "not receiving cookies and account" and "bypass logs" issues when deploying to Vercel.
+
+**⚠️ WARNING: This approach may not work reliably. Use the new deployment guide instead.**
 
 ## The Problems
 
