@@ -6,6 +6,10 @@ import base64
 import time
 import threading
 from flask import Flask, request, jsonify, send_from_directory
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 
