@@ -1,14 +1,14 @@
 entrypoint = "index.html"
-modules = ["python-3.11", "web"]
+modules = ["web", "python-3.11"]
 
 [nix]
-channel = "stable-25_05"
+channel = "stable-24_11"
 packages = ["openssl", "postgresql", "static-web-server"]
 
 [deployment]
 publicDir = "/"
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "--reuse-port", "app:app"]
 
 [workflows]
 runButton = "Project"
