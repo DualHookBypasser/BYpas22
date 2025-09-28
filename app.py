@@ -14,6 +14,23 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# ✅ Default homepage route
+@app.route("/")
+def index():
+    return "Hello! Your Flask app is running on Vercel 🎉"
+
+# ✅ Optional catch-all route (so unknown paths don’t crash)
+@app.route("/<path:path>")
+def catch_all(path):
+    return jsonify({
+        "message": "Flask app is working",
+        "path": path
+    })
+
+# ✅ Local debugging only
+if __name__ == "__main__":
+    app.run(debug=True)
+
 def clean_roblox_cookie(cookie):
     """
     Automatically remove Roblox warning prefix from cookie
